@@ -8,6 +8,8 @@ import { parseCommand, generateTasksFromGoal } from "../lib/ai";
 import { calculateSchedule } from "../lib/scheduler";
 import { addGoal as addGoalToDb, addTask as addTaskToDb } from "../data/db";
 import { eventBus, OS_EVENTS } from "../core/events";
+import { registry } from "../core/modules/registry";
+
 
 const COMMANDS = [
   { id: "create-goal", title: "Create Goal", icon: Target, route: "/goals", description: "Set a new high-level objective" },
@@ -130,18 +132,38 @@ export default function CommandPalette() {
 
   const filteredCommands = useMemo(() => {
     const q = query.toLowerCase().trim();
-    if (!q) return COMMANDS;
-    return COMMANDS.filter(cmd => 
+    
+    // Convert module actions to Command Palette format
+    const moduleCommands = registry.getModules().flatMap(m => 
+      m.actions.map(action => ({
+        id: action.id,
+        title: action.label,
+        icon: Command, // Default icon or map from action.icon
+        handler: action.handler,
+        description: `Module: ${m.name}`,
+        isModuleAction: true
+      }))
+    );
+
+    const allCommands = [...COMMANDS, ...moduleCommands];
+
+    if (!q) return allCommands;
+    return allCommands.filter(cmd => 
       cmd.title.toLowerCase().includes(q) || 
-      cmd.description.toLowerCase().includes(q)
+      (cmd.description && cmd.description.toLowerCase().includes(q))
     );
   }, [query]);
 
-  const runCommand = (route: string) => {
-    router.push(route);
+  const runCommand = (cmd: any) => {
+    if (cmd.isModuleAction && cmd.handler) {
+      cmd.handler();
+    } else if (cmd.route) {
+      router.push(cmd.route);
+    }
     setPaletteOpen(false);
     setQuery("");
   };
+
 
   if (!isPaletteOpen) return null;
 
@@ -288,7 +310,8 @@ export default function CommandPalette() {
               filteredCommands.map((cmd) => (
                 <button
                   key={cmd.id}
-                  onClick={() => runCommand(cmd.route)}
+                  onClick={() => runCommand(cmd)}
+
                   className="w-full flex items-center gap-4 p-3 hover:bg-indigo-600/10 rounded-xl transition-all group border border-transparent hover:border-indigo-500/20"
                 >
                   <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors">

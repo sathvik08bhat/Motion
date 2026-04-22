@@ -6,12 +6,24 @@ import { initAgentLoop } from "../core/agent/loop";
 import { useStore } from "../core/store";
 import { eventBus, OS_EVENTS } from "../core/events";
 import { requestNotificationPermission, sendNotification } from "../lib/services/notifications";
+import { AVAILABLE_MODULES } from "../modules"; 
+import { registerModule } from "../core/modules/registry";
 
 export default function AppInitializer() {
   const store = useStore();
 
   useEffect(() => {
+    // 1. Dynamic Module Installation
+    const installed = store.installedModules || [];
+    AVAILABLE_MODULES.forEach(mod => {
+      if (installed.includes(mod.name)) {
+        registerModule(mod);
+      }
+    });
+
+    // 2. Systems Boot
     initMemorySystem();
+
     const cleanup = initAgentLoop(useStore);
 
     // Initial Permissions

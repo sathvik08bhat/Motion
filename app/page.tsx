@@ -12,6 +12,8 @@ import { calculateSchedule, getAutoRescheduledUpdates, getNextBestTask } from ".
 import { bulkUpdateTasks, type Task } from "../data/db";
 import { useState } from "react";
 import { eventBus, OS_EVENTS } from "../core/events";
+import ModuleWidgets from "../components/dashboard/ModuleWidgets";
+
 
 export default function Home() {
   const goals = useStore((state) => state.goals);
@@ -184,7 +186,11 @@ export default function Home() {
               <PendingView />
             </div>
           </div>
+
+          {/* Module Widgets */}
+          <ModuleWidgets />
         </section>
+
 
         <footer className="pt-16 border-t border-zinc-900 flex justify-between items-center text-[10px] font-bold text-zinc-800 uppercase tracking-widest">
           <span>Motion OS v1.0.0</span>

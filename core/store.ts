@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+
 
 export interface Goal {
   id?: number;
@@ -30,46 +32,67 @@ interface MotionState {
   updateTask: (taskId: number, updates: Partial<Task>) => void;
   bulkUpdateTasks: (updates: { id: number; updates: Partial<Task> }[]) => void;
   deleteTask: (taskId: number) => void;
+  installedModules: string[];
+  installModule: (name: string) => void;
+  uninstallModule: (name: string) => void;
 }
 
-export const useStore = create<MotionState>((set) => ({
-  goals: [],
-  tasks: [],
-  isPaletteOpen: false,
 
-  setPaletteOpen: (isOpen) => set({ isPaletteOpen: isOpen }),
-  
-  setGoals: (goals) => set({ goals }),
-  
-  addGoal: (goal) =>
-    set((state) => ({
-      goals: [...state.goals, goal],
-    })),
+export const useStore = create<MotionState>()(
+  persist(
+    (set) => ({
+      goals: [],
+      tasks: [],
+      isPaletteOpen: false,
 
-  setTasks: (tasks) => set({ tasks }),
+      setPaletteOpen: (isOpen) => set({ isPaletteOpen: isOpen }),
+      
+      setGoals: (goals) => set({ goals }),
+      
+      addGoal: (goal) =>
+        set((state) => ({
+          goals: [...state.goals, goal],
+        })),
 
-  addTask: (task) =>
-    set((state) => ({
-      tasks: [...state.tasks, task],
-    })),
+      setTasks: (tasks) => set({ tasks }),
 
-  updateTask: (taskId, updates) =>
-    set((state) => ({
-      tasks: state.tasks.map((task) =>
-        task.id === taskId ? { ...task, ...updates } : task
-      ),
-    })),
+      addTask: (task) =>
+        set((state) => ({
+          tasks: [...state.tasks, task],
+        })),
 
-  bulkUpdateTasks: (updates) =>
-    set((state) => ({
-      tasks: state.tasks.map((task) => {
-        const update = updates.find((u) => u.id === task.id);
-        return update ? { ...task, ...update.updates } : task;
-      }),
-    })),
+      updateTask: (taskId, updates) =>
+        set((state) => ({
+          tasks: state.tasks.map((task) =>
+            task.id === taskId ? { ...task, ...updates } : task
+          ),
+        })),
 
-  deleteTask: (taskId) =>
-    set((state) => ({
-      tasks: state.tasks.filter((task) => task.id !== taskId),
-    })),
-}));
+      bulkUpdateTasks: (updates) =>
+        set((state) => ({
+          tasks: state.tasks.map((task) => {
+            const update = updates.find((u) => u.id === task.id);
+            return update ? { ...task, ...update.updates } : task;
+          }),
+        })),
+
+      deleteTask: (taskId) =>
+        set((state) => ({
+          tasks: state.tasks.filter((task) => task.id !== taskId),
+        })),
+
+      installedModules: ['Calendar', 'Study'], // Default modules
+      
+      installModule: (name) => set((state) => ({
+        installedModules: [...state.installedModules, name]
+      })),
+
+      uninstallModule: (name) => set((state) => ({
+        installedModules: state.installedModules.filter(m => m !== name)
+      })),
+    }),
+    { name: "motion-settings" }
+  )
+);
+
+

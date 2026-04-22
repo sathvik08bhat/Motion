@@ -69,4 +69,16 @@ async function performAudit(store: any) {
       }
     }
   });
+
+  // 5. Run Module Agent Hooks
+  const { registry } = require("../modules/registry");
+  const hooks = registry.getAgentHooks();
+  for (const hook of hooks) {
+    try {
+      await hook(store);
+    } catch (error) {
+      console.error("❌ Motion Agent: Module hook failed:", error);
+    }
+  }
 }
+

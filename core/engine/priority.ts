@@ -44,5 +44,17 @@ export function calculatePriorityScore(
     score += 100; // Extra "Urgent Rescue" boost
   }
 
+  // 6. Dynamic Module Hooks
+  const { registry } = require("../modules/registry");
+  const hooks = registry.getPriorityHooks();
+  for (const hook of hooks) {
+    try {
+      score += hook(task, goal);
+    } catch (error) {
+      console.error("❌ Priority Engine: Module hook failed:", error);
+    }
+  }
+
   return score;
 }
+

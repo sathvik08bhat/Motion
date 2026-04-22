@@ -21,7 +21,19 @@ export async function calculateSchedule(tasks: Task[], goals: Goal[]): Promise<S
   console.log(`🧠 Motion Memory: System state is ${metrics.state} (Miss Rate: ${(metrics.missRate * 100).toFixed(1)}%)`);
 
   // 2. Filter for pending tasks
-  const pendingTasks = tasks.filter((t) => t.status !== "done");
+  let pendingTasks = tasks.filter((t) => t.status !== "done");
+
+  // 2.5. Run Module Planner Hooks
+  const { registry } = require("../modules/registry");
+  const plannerHooks = registry.getPlannerHooks();
+  for (const hook of plannerHooks) {
+    try {
+      pendingTasks = hook(pendingTasks, goals);
+    } catch (error) {
+      console.error("❌ Scheduler: Module planner hook failed:", error);
+    }
+  }
+
 
   // 3. Enrich with dynamic priority scores and adaptive duration scaling
   const enrichedTasks = pendingTasks.map((task) => {

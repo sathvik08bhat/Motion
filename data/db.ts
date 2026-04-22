@@ -8,6 +8,15 @@ export interface Goal {
   status: "not-started" | "in-progress" | "completed";
 }
 
+export interface Subject {
+  id?: number;
+  name: string;
+  goalId?: number;
+  mastery: number; // 0-100
+  lastStudiedAt?: Date;
+}
+
+
 export interface Task {
   id?: number;
   title: string;
@@ -31,9 +40,11 @@ export class MotionDatabase extends Dexie {
   goals!: Table<Goal>;
   tasks!: Table<Task>;
   taskPerformanceLogs!: Table<TaskPerformanceRecord>;
+  subjects!: Table<Subject>;
 
   constructor() {
     super("MotionDB");
+
     this.version(1).stores({
       goals: "++id, title, deadline, priority, status",
       tasks: "++id, title, goalId, duration, scheduledAt, status",
@@ -46,8 +57,13 @@ export class MotionDatabase extends Dexie {
     this.version(3).stores({
       tasks: "++id, title, goalId, duration, scheduledAt, status, createdAt",
     });
+
+    this.version(4).stores({
+      subjects: "++id, name, goalId, mastery, lastStudiedAt",
+    });
   }
 }
+
 
 export const db = new MotionDatabase();
 
@@ -79,3 +95,17 @@ export const bulkUpdateTasks = async (updates: { id: number; updates: Partial<Ta
     }
   });
 };
+
+// Subject Helpers
+export const addSubject = async (subject: Omit<Subject, "id">) => {
+  return await db.subjects.add(subject);
+};
+
+export const getSubjects = async () => {
+  return await db.subjects.toArray();
+};
+
+export const updateSubject = async (id: number, updates: Partial<Subject>) => {
+  return await db.subjects.update(id, updates);
+};
+
