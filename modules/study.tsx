@@ -177,9 +177,9 @@ export const StudyModule: Module = {
       console.log(`🤖 Study Agent: Detected ${staleSubjects.length} stale subjects. Recommending review.`);
       // We could auto-schedule here, but for now we just nudge
     }
-    }
   },
   onEvent: {
+
     'task_completed': async (task) => {
       if (task.title.toLowerCase().includes('study')) {
         const subjects = await getSubjects();
