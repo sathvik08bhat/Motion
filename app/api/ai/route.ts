@@ -11,45 +11,39 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'No AI API keys are configured on the server.' }, { status: 500 });
   }
 
-  try {
-    const { messages, config } = await req.json();
-    let lastError = null;
+  const { messages, config } = await req.json();
+  let lastError = 'AI request failed';
 
-    // Failover Logic: Try all available keys
-    for (let i = 0; i < keys.length; i++) {
-      const apiKey = keys[i];
-      try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: config?.model || 'llama-3.3-70b-versatile',
-            messages: messages,
-            temperature: config?.temperature || 0.7,
-            max_tokens: config?.max_tokens || 1024
-          })
-        });
+  // Fallback loop
+  for (const apiKey of keys) {
+    try {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: config?.model || 'llama-3.3-70b-versatile',
+          messages: messages,
+          temperature: config?.temperature || 0.7,
+          max_tokens: config?.max_tokens || 1024
+        })
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          return NextResponse.json(data);
-        }
-
-        const errorData = await response.json();
-        console.warn(`AI Key ${i + 1} failed:`, errorData.error?.message || 'Unknown error');
-        lastError = errorData.error?.message || 'AI request failed';
-      } catch (err: any) {
-        console.error(`AI Key ${i + 1} transport error:`, err);
-        lastError = err.message;
+      if (response.ok) {
+        const data = await response.json();
+        return NextResponse.json(data);
       }
-    }
 
-    return NextResponse.json({ error: lastError || 'All AI keys failed.' }, { status: 500 });
-  } catch (error) {
-    console.error('API Route AI Internal Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      const errorData = await response.json();
+      lastError = errorData.error?.message || 'AI request failed';
+      console.warn(`AI Key failed, trying next... Error: ${lastError}`);
+    } catch (error) {
+      console.error('API Route AI Error:', error);
+      lastError = 'Internal server error';
+    }
   }
+
+  return NextResponse.json({ error: lastError }, { status: 500 });
 }
