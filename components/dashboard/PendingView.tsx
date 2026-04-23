@@ -14,10 +14,12 @@ export default function PendingView() {
 
   const pendingTasks = tasks.filter((t) => {
     const isDone = t.status === "done";
-    const isNotToday = t.scheduledAt.toDateString() !== todayStr;
-    const isPast = t.scheduledAt.getTime() < todayDate.getTime();
+    const isNotToday = new Date(t.scheduledAt).toDateString() !== todayStr;
+
+    const isPast = new Date(t.scheduledAt).getTime() < todayDate.getTime();
     return !isDone && (isNotToday || isPast);
-  }).sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
+  }).sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+
 
   const toggleTask = async (task: Task) => {
     const newStatus = task.status === "done" ? "todo" : "done";
@@ -31,8 +33,10 @@ export default function PendingView() {
 
   if (pendingTasks.length === 0) {
     return (
-      <div className="p-8 border border-dashed border-zinc-800 rounded-2xl text-center text-zinc-500 text-sm">
-        No pending tasks outside of today.
+      <div className="flex flex-col items-center justify-center p-8 bg-zinc-900/10 border border-dashed border-zinc-800/50 rounded-2xl animate-in fade-in zoom-in-95 duration-500">
+        <CheckCircle2 className="w-6 h-6 text-emerald-500/50 mb-3" />
+        <p className="text-sm font-bold text-zinc-400">All caught up!</p>
+        <p className="text-[10px] font-medium text-zinc-600 mt-1 uppercase tracking-widest">No pending tasks outside today</p>
       </div>
     );
   }
@@ -42,7 +46,7 @@ export default function PendingView() {
       {pendingTasks.map((task) => (
         <div
           key={task.id}
-          className="flex items-center gap-4 bg-zinc-900/40 border border-zinc-800/50 p-4 rounded-xl hover:border-zinc-700 transition-all group"
+          className="flex items-center gap-4 bg-zinc-900/40 border border-zinc-800/50 p-4 rounded-xl transition-all duration-300 hover:bg-zinc-800/40 hover:border-zinc-600 hover:-translate-y-0.5 hover:shadow-lg group"
         >
           <button
             onClick={() => toggleTask(task)}
@@ -57,7 +61,8 @@ export default function PendingView() {
             <div className="flex items-center gap-2 mt-0.5">
               <AlertCircle className="w-3 h-3 text-rose-500/50" />
               <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-tight">
-                Overdue / Upcoming: {task.scheduledAt.toLocaleDateString()}
+                Overdue / Upcoming: {new Date(task.scheduledAt).toLocaleDateString()}
+
               </span>
             </div>
           </div>

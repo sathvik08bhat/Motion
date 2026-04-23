@@ -73,8 +73,8 @@ export async function generateTasksFromGoal(goalText: string): Promise<{ title: 
       const finalTasks: { title: string; duration: number }[] = [];
 
       for (const item of parsed) {
-        let duration = Number(item.duration) || 30;
-        let title = item.title || "Untitled Action";
+        const duration = Number(item.duration) || 30;
+        const title = item.title || "Untitled Action";
 
         // Safety Split: If AI misses the rule, we enforce it here
         if (duration > 120) {
@@ -149,3 +149,50 @@ export async function parseCommand(inputText: string): Promise<{ intent: string;
     return { intent: "unknown", data: {} };
   }
 }
+
+/**
+ * High-level AI Agent Decision Logic:
+ * Analyzes the system context (metrics, tasks, goals) and decides on a proactive action.
+ */
+export async function getAgentDecision(context: any): Promise<{ action: string; reason: string }> {
+  const prompt = `
+    Act as an autonomous AI Agent for a productivity OS.
+    Analyze the current system state and decide on the best proactive intervention.
+
+    ALLOWED ACTIONS:
+    - reprioritize_tasks: If tasks are overdue, missed, or the schedule is inefficient.
+    - suggest_break: If completion streak is high or system state is HIGH_STRESS.
+    - increase_workload: If system state is PEAK_PERFORMANCE and pending tasks are low.
+    - none: If the system state is healthy and balanced.
+
+    CONTEXT:
+    ${JSON.stringify(context, null, 2)}
+
+    RULES:
+    1. Return ONLY a valid JSON object.
+    2. Format: {"action": "string", "reason": "string"}
+    3. The reason should be a concise, user-friendly explanation.
+
+    Output:
+  `.trim();
+
+  try {
+    const rawResponse = await callAI(prompt, { temperature: 0.3 });
+    
+    const content = rawResponse.choices?.[0]?.message?.content || rawResponse;
+    const cleanContent = typeof content === "string" 
+      ? content.replace(/```json|```/g, "").trim() 
+      : content;
+
+    const parsed = typeof cleanContent === "string" ? JSON.parse(cleanContent) : cleanContent;
+
+    return {
+      action: parsed.action || "none",
+      reason: parsed.reason || "Maintaining current momentum."
+    };
+  } catch (error) {
+    console.error("AI Agent Decision failed:", error);
+    return { action: "none", reason: "Error calculating optimal state." };
+  }
+}
+

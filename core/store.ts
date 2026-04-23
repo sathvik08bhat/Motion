@@ -1,26 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { type Task, type Goal } from "../data/db";
 
-
-export interface Goal {
-  id?: number;
-  title: string;
-  deadline: Date;
-  priority: "low" | "medium" | "high";
-  status: "not-started" | "in-progress" | "completed";
-}
-
-export interface Task {
-  id?: number;
-  title: string;
-  goalId?: number;
-  duration: number; // in minutes
-  scheduledAt: Date;
-  status: "todo" | "doing" | "done";
-  createdAt: Date;
-}
 
 interface MotionState {
+
   goals: Goal[];
   tasks: Task[];
   isPaletteOpen: boolean;
@@ -36,6 +20,8 @@ interface MotionState {
   installModule: (name: string) => void;
   uninstallModule: (name: string) => void;
 }
+
+
 
 
 export const useStore = create<MotionState>()(
@@ -91,6 +77,8 @@ export const useStore = create<MotionState>()(
         installedModules: state.installedModules.filter(m => m !== name)
       })),
     }),
+
+
     { name: "motion-settings" }
   )
 );

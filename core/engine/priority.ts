@@ -1,10 +1,13 @@
 import { type Task, type Goal, type TaskPerformanceRecord } from "../../data/db";
+import { type PerformanceMetrics } from "../../lib/services/memory";
 
 export function calculatePriorityScore(
   task: Task,
   goal?: Goal,
-  logs: TaskPerformanceRecord[] = []
+  logs: TaskPerformanceRecord[] = [],
+  metrics?: PerformanceMetrics
 ): number {
+
   let score = 0;
 
   // 1. Goal Base Priority
@@ -44,7 +47,30 @@ export function calculatePriorityScore(
     score += 100; // Extra "Urgent Rescue" boost
   }
 
-  // 6. Dynamic Module Hooks
+  // 6. Memory Pattern Boosts
+  if (metrics) {
+    // 6.1. Difficult Goal Support
+    if (goal?.id && metrics.failurePatterns.difficultGoals.includes(goal.id)) {
+      score += 60; // Extra nudge for categories that are struggling
+    }
+
+    // 6.2. Peak Performance Window
+    const currentHour = new Date().getHours();
+    if (currentHour >= metrics.peakWindow.start && currentHour <= metrics.peakWindow.end) {
+      // If it's a high priority task, boost it more during peak focus
+      if (goal?.priority === 'high' || task.duration > 60) {
+        score += 80;
+      }
+    }
+
+    // 6.3. Duration Sensitivity
+    if (task.duration > metrics.recommendedMaxDuration) {
+      score -= 50; // De-prioritize oversized tasks to encourage splitting
+    }
+  }
+
+  // 7. Dynamic Module Hooks
+
   const { registry } = require("../modules/registry");
   const hooks = registry.getPriorityHooks();
   for (const hook of hooks) {

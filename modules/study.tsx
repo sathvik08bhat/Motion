@@ -6,7 +6,11 @@ import { db, addSubject, getSubjects, addTask, Subject, Goal } from '../data/db'
 import { useLiveQuery } from 'dexie-react-hooks';
 import { BookOpen, Plus, GraduationCap, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 
+import { runAgentAction } from '../core/agent/orchestrator';
+import { createAgentAction } from '../core/agent/types';
+
 // --- UI Components ---
+
 
 const StudyWidget = () => {
   const subjects = useLiveQuery(() => db.subjects.toArray()) || [];
@@ -149,17 +153,17 @@ export const StudyModule: Module = {
         // Generate tasks for weak subjects
         const weakSubjects = subjects.sort((a, b) => a.mastery - b.mastery).slice(0, 2);
         for (const sub of weakSubjects) {
-          await addTask({
+          const action = createAgentAction("create_task", {
             title: `Study: ${sub.name} (Review Fundamentals)`,
             duration: 45,
-            goalId: sub.goalId,
-            status: 'todo',
-            scheduledAt: new Date(),
-            createdAt: new Date()
-          });
+            goalId: sub.goalId
+          }, `Autonomous study plan generation for weak subject: ${sub.name}`);
+          
+          await runAgentAction(action);
         }
-        alert(`Study plan generated! Added sessions for: ${weakSubjects.map(s => s.name).join(', ')}`);
+        // No alert needed as orchestrator handles visibility/confirmation
       }
+
     }
   ],
   components: {
@@ -190,11 +194,44 @@ export const StudyModule: Module = {
             mastery: newMastery,
             lastStudiedAt: new Date()
           });
-        }
       }
     }
   },
+  },
+  plannerHook: async (tasks, goals) => {
+
+
+    const subjects = await getSubjects();
+    const newTasks = [...tasks];
+    const today = new Date().toDateString();
+
+    for (const subject of subjects) {
+      const alreadyScheduled = tasks.some(t => 
+        t.title.includes(subject.name) && 
+        new Date(t.scheduledAt).toDateString() === today
+      );
+
+      const isStale = !subject.lastStudiedAt || (new Date().getTime() - new Date(subject.lastStudiedAt).getTime() > 3 * 24 * 60 * 60 * 1000);
+      const isWeak = subject.mastery < 40;
+
+      if (!alreadyScheduled && (isStale || isWeak)) {
+        console.log(`🎓 Study Module: Auto-injecting session for ${subject.name}`);
+        newTasks.push({
+          title: `Study: ${subject.name}`,
+          duration: 60,
+          status: 'todo',
+          scheduledAt: new Date(),
+          createdAt: new Date(),
+          goalId: subject.goalId
+        } as any);
+      }
+    }
+
+    return newTasks;
+  },
   priorityHook: (task) => {
+
+
     if (task.title.toLowerCase().includes('study')) {
       return 150; // Significant boost for learning tasks
     }

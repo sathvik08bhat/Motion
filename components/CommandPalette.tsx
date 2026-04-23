@@ -6,9 +6,16 @@ import { useStore } from "../core/store";
 import { Command, Search, Target, ListTodo, X, Sparkles, Wand2, Calendar, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
 import { parseCommand, generateTasksFromGoal } from "../lib/ai";
 import { calculateSchedule } from "../lib/scheduler";
-import { addGoal as addGoalToDb, addTask as addTaskToDb } from "../data/db";
+import { addGoal as addGoalToDb } from "../data/db";
 import { eventBus, OS_EVENTS } from "../core/events";
 import { registry } from "../core/modules/registry";
+import { runAgentAction } from "../core/agent/orchestrator";
+import { createAgentAction, createAction } from "../core/agent/types";
+import { processIntent, validateIntentResponse } from "../core/agent/intent";
+
+import { addIntent } from "../data/db";
+
+
 
 
 const COMMANDS = [
@@ -59,9 +66,12 @@ export default function CommandPalette() {
       switch (result.intent) {
         case "plan_day": {
           const planUpdates = await calculateSchedule(tasks, goals);
-          // bulkUpdateTasks is from db.ts, handles IDB
-          await bulkUpdateTasksInStore(planUpdates); 
-          eventBus.emit(OS_EVENTS.PLAN_CREATED, { count: planUpdates.length });
+          const action = createAgentAction("bulk_schedule", { updates: planUpdates }, `AI request to optimize daily schedule: "${input}"`);
+          await runAgentAction(action);
+          
+          // Note: Since runAgentAction might be pending, we don't update store immediately here 
+          // if we want to be strict. But for smooth UX, if it's approved, we should.
+          // Actually, orchestrator should probably handle store updates or we should re-hydrate.
           setAiResult({ intent: "plan_day", data: { count: planUpdates.length } });
           break;
         }
@@ -88,40 +98,53 @@ export default function CommandPalette() {
           addGoalToStore({ ...goalData, id: goalId });
 
           const generated = await generateTasksFromGoal(goalData.title);
-          for (const gen of generated) {
-            const taskData = {
-              title: gen.title,
-              duration: gen.duration,
-              goalId: goalId,
-              scheduledAt: new Date(),
-              status: "todo" as const,
-              createdAt: new Date()
-            };
-            const taskId = await addTaskToDb(taskData) as number;
-            addTaskToStore({ ...taskData, id: taskId });
-          }
+          const tasksToCreate = generated.map(gen => ({
+            title: gen.title,
+            duration: gen.duration,
+            goalId: goalId,
+            scheduledAt: new Date()
+          }));
+
+          const action = createAgentAction("bulk_create_tasks", { tasks: tasksToCreate }, `Breaking down goal "${goalTitle}" into actionable tasks.`);
+          await runAgentAction(action);
+          
           setAiResult({ intent: "create_goal", data: { title: goalTitle, taskCount: generated.length } });
           break;
         }
 
         case "create_task": {
           const taskTitle = result.data.title || input.replace("create task", "").trim();
-          const taskData = {
+          const action = createAgentAction("create_task", {
             title: taskTitle,
             duration: result.data.duration || 30,
-            scheduledAt: new Date(),
-            status: "todo" as const,
-            createdAt: new Date()
-          };
-          const taskId = await addTaskToDb(taskData) as number;
-          addTaskToStore({ ...taskData, id: taskId });
-          setAiResult({ intent: "create_task", data: { title: taskTitle, duration: taskData.duration } });
+            scheduledAt: new Date()
+          }, `AI request to add task: "${input}"`);
+          
+          await runAgentAction(action);
+          setAiResult({ intent: "create_task", data: { title: taskTitle, duration: result.data.duration || 30 } });
           break;
         }
 
-        default:
-          setAiResult({ intent: "unknown", data: {} });
+
+        default: {
+          // If the specialized parser doesn't know what to do, use the general Intent Processor
+          await addIntent({ text: input, timestamp: Date.now() });
+          const intentResult = await processIntent(input, { goals, tasks });
+          validateIntentResponse(intentResult);
+
+
+          const action = createAction(
+
+            "create_goal_with_tasks",
+            { goal: intentResult.goal, tasks: intentResult.tasks },
+            `AI request to process intent: "${input}"`
+          );
+          
+          await runAgentAction(action);
+          setAiResult({ intent: "create_goal", data: { title: intentResult.goal, taskCount: intentResult.tasks.length } });
           break;
+        }
+
       }
     } catch (error) {
       console.error("Smart Action failed:", error);

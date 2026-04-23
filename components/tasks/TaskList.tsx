@@ -2,7 +2,9 @@
 
 import { useStore } from "../../core/store";
 import { updateTask as updateTaskInDb, type Task } from "../../data/db";
-import { CheckCircle2, Circle, Clock, Target, Calendar } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Target, Calendar, ChevronRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { cardHover, buttonHover } from "../../lib/animations";
 import { eventBus, OS_EVENTS } from "../../core/events";
 
 interface TaskListProps {
@@ -32,13 +34,15 @@ export default function TaskList({ viewMode }: TaskListProps) {
   };
 
   const renderTask = (task: Task) => (
-    <div
+    <motion.div
       key={task.id}
-      className={`flex items-center gap-4 bg-zinc-900/50 border border-zinc-800 p-4 rounded-xl transition-all group ${
-        task.status === "done" ? "opacity-50" : "hover:border-zinc-700"
+      {...cardHover}
+      className={`flex items-center gap-4 p-4 rounded-xl transition-all card ${
+        task.status === "done" ? "opacity-50" : ""
       }`}
     >
-      <button
+      <motion.button
+        {...buttonHover}
         onClick={() => toggleTask(task)}
         className="text-zinc-600 hover:text-indigo-400 transition-colors"
       >
@@ -47,7 +51,7 @@ export default function TaskList({ viewMode }: TaskListProps) {
         ) : (
           <Circle className="w-6 h-6" />
         )}
-      </button>
+      </motion.button>
       
       <div className="flex-1 min-w-0">
         <h4 className={`text-sm font-semibold text-zinc-100 truncate ${
@@ -59,21 +63,42 @@ export default function TaskList({ viewMode }: TaskListProps) {
           <span className="text-[10px] text-zinc-500 flex items-center gap-1 font-medium bg-zinc-950 px-2 py-0.5 rounded-full border border-zinc-800">
             <Target className="w-2.5 h-2.5" /> {getGoalTitle(task.goalId)}
           </span>
+          <span className="text-[10px] text-indigo-400 font-bold bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20 uppercase tracking-tighter">
+            {task.domain}
+          </span>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-tighter ${
+            task.priority === 'high' ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 
+            task.priority === 'medium' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 
+            'text-zinc-500 bg-zinc-800 border-zinc-700'
+          }`}>
+            {task.priority}
+          </span>
           <span className="text-[10px] text-zinc-600 flex items-center gap-1">
             <Clock className="w-2.5 h-2.5" /> {task.duration}m
           </span>
           <span className="text-[10px] text-zinc-600 flex items-center gap-1">
-            <Calendar className="w-2.5 h-2.5" /> {task.scheduledAt.toLocaleDateString()}
+            <Calendar className="w-2.5 h-2.5" /> {new Date(task.scheduledAt).toLocaleDateString()}
           </span>
         </div>
+
       </div>
-    </div>
+    </motion.div>
   );
 
   if (tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 bg-zinc-900/30 border border-dashed border-zinc-800 rounded-2xl text-zinc-500 mt-8">
-        <p className="text-sm">No tasks found.</p>
+      <div className="flex flex-col items-center justify-center p-16 bg-zinc-900/10 border border-dashed border-zinc-800/50 rounded-3xl mt-8 animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4">
+          <Target className="w-6 h-6 text-zinc-600" />
+        </div>
+        <p className="text-sm font-medium text-zinc-500 mb-6">No active tasks found in this view.</p>
+        <a 
+          href="/goals" 
+          className="group flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:bg-zinc-200 hover:scale-105 active:scale-95"
+        >
+          Create your first goal
+          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </a>
       </div>
     );
   }
@@ -104,7 +129,7 @@ export default function TaskList({ viewMode }: TaskListProps) {
 
   if (viewMode === "date") {
     const grouped = tasks.reduce((acc, task) => {
-      const dateKey = task.scheduledAt.toLocaleDateString(undefined, { 
+      const dateKey = new Date(task.scheduledAt).toLocaleDateString(undefined, { 
         weekday: 'short', month: 'short', day: 'numeric' 
       });
       if (!acc[dateKey]) acc[dateKey] = [];
@@ -130,7 +155,7 @@ export default function TaskList({ viewMode }: TaskListProps) {
 
   return (
     <div className="grid grid-cols-1 gap-2 mt-8">
-      {tasks.sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime()).map(renderTask)}
+      {[...tasks].sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()).map(renderTask)}
     </div>
   );
 }

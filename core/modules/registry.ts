@@ -17,14 +17,14 @@ export interface Module {
   onTick?: (store: any) => void | Promise<void>;
   // Agent Logic Hooks
   priorityHook?: (task: any, goal?: any) => number;
-  plannerHook?: (tasks: any[], goals: any[]) => any[];
+  plannerHook?: (tasks: any[], goals: any[]) => any[] | Promise<any[]>;
 }
 
 class ModuleRegistry {
   private modules: Map<string, Module> = new Map();
   private agentHooks: Array<(store: any) => void | Promise<void>> = [];
   private priorityHooks: Array<(task: any, goal?: any) => number> = [];
-  private plannerHooks: Array<(tasks: any[], goals: any[]) => any[]> = [];
+  private plannerHooks: Array<(tasks: any[], goals: any[]) => any[] | Promise<any[]>> = [];
 
 
 

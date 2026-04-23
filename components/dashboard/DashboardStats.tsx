@@ -9,7 +9,8 @@ export default function DashboardStats() {
 
   const activeGoals = goals.filter((g) => g.status !== "completed").length;
   const today = new Date().toDateString();
-  const todayTasks = tasks.filter((t) => t.scheduledAt.toDateString() === today);
+  const todayTasks = tasks.filter((t) => new Date(t.scheduledAt).toDateString() === today);
+
   const completedToday = todayTasks.filter((t) => t.status === "done").length;
   const pendingOverall = tasks.filter((t) => t.status !== "done").length;
 

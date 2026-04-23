@@ -5,8 +5,8 @@ import { getGoals } from "../../data/db";
 import { useStore } from "../../core/store";
 import GoalForm from "../../components/goals/GoalForm";
 import GoalList from "../../components/goals/GoalList";
-import { MoveLeft } from "lucide-react";
-import Link from "next/link";
+import { motion } from "framer-motion";
+import { fadeIn, slideUp, staggerContainer } from "../../lib/animations";
 
 export default function GoalsPage() {
   const setGoals = useStore((state) => state.setGoals);
@@ -24,42 +24,37 @@ export default function GoalsPage() {
   }, [setGoals]);
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 lg:p-24 selection:bg-indigo-500/30">
-      <div className="max-w-2xl mx-auto space-y-12">
-        <header className="space-y-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-sm font-medium"
-          >
-            <MoveLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-          <div className="space-y-1">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
-              Goals
-            </h1>
-            <p className="text-zinc-500 font-medium">
-              Define your core objectives and track your progress.
-            </p>
-          </div>
-        </header>
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      variants={staggerContainer}
+      className="p-8 max-w-3xl mx-auto space-y-10"
+    >
+      <motion.header variants={fadeIn} className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--accent-primary)" }}>
+          Vision
+        </p>
+        <h1 className="text-4xl font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
+          Goals
+        </h1>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Define your core objectives and track your progress.
+        </p>
+      </motion.header>
 
-        <section className="space-y-8">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-300 flex items-center gap-2">
-              Establish New Goal
-            </h2>
-            <GoalForm />
-          </div>
+      <motion.section variants={slideUp} className="space-y-3">
+        <h2 className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+          New Objective
+        </h2>
+        <GoalForm />
+      </motion.section>
 
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-300 flex items-center gap-2">
-              Current Objectives
-            </h2>
-            <GoalList />
-          </div>
-        </section>
-      </div>
-    </div>
+      <motion.section variants={slideUp} className="space-y-4">
+        <div className="pb-4" style={{ borderBottom: "1px solid var(--border-default)" }}>
+          <h2 className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>Active Pursuits</h2>
+        </div>
+        <GoalList />
+      </motion.section>
+    </motion.div>
   );
 }

@@ -5,8 +5,9 @@ import { getTasks, getGoals } from "../../data/db";
 import { useStore } from "../../core/store";
 import TaskForm from "../../components/tasks/TaskForm";
 import TaskList from "../../components/tasks/TaskList";
-import { MoveLeft, LayoutList, Target, Calendar } from "lucide-react";
-import Link from "next/link";
+import { LayoutList, Target, Calendar } from "lucide-react";
+import { motion } from "framer-motion";
+import { fadeIn, slideUp, staggerContainer, cardHover, buttonHover } from "../../lib/animations";
 
 export default function TasksPage() {
   const [viewMode, setViewMode] = useState<"flat" | "goal" | "date">("flat");
@@ -26,68 +27,74 @@ export default function TasksPage() {
     hydrate();
   }, [setGoals, setTasks]);
 
+  const VIEW_MODES = [
+    { id: "flat" as const, label: "List",  icon: LayoutList },
+    { id: "goal" as const, label: "Goal",  icon: Target },
+    { id: "date" as const, label: "Date",  icon: Calendar },
+  ];
+
   return (
-    <div className="min-h-screen bg-black text-white p-6 md:p-12 lg:p-24 selection:bg-indigo-500/30">
-      <div className="max-w-2xl mx-auto space-y-12">
-        <header className="space-y-4">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors text-sm font-medium"
+    <motion.div 
+      initial="initial"
+      animate="animate"
+      variants={staggerContainer}
+      className="p-8 max-w-3xl mx-auto space-y-10"
+    >
+      {/* Header */}
+      <motion.header variants={fadeIn} className="space-y-1">
+        <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: "var(--accent-primary)" }}>
+          Manage
+        </p>
+        <h1 className="text-4xl font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
+          Tasks
+        </h1>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Manage your actionable items and stay on track.
+        </p>
+      </motion.header>
+
+      {/* Fast Add Form */}
+      <motion.section variants={slideUp} className="space-y-3">
+        <h2 className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
+          Quick Add
+        </h2>
+        <TaskForm />
+      </motion.section>
+
+      {/* Task List */}
+      <motion.section variants={slideUp} className="space-y-5">
+        <div
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4"
+          style={{ borderBottom: "1px solid var(--border-default)" }}
+        >
+          <h2 className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>Your Tasks</h2>
+          
+          {/* View Mode Switcher */}
+          <div
+            className="flex items-center p-1 rounded-xl gap-1"
+            style={{ background: "var(--bg-secondary)", border: "1px solid var(--border-default)" }}
           >
-            <MoveLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Link>
-          <div className="space-y-1">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
-              Tasks
-            </h1>
-            <p className="text-zinc-500 font-medium">
-              Manage your actionable items and stay on track.
-            </p>
+            {VIEW_MODES.map(({ id, label, icon: Icon }) => (
+              <motion.button
+                key={id}
+                {...buttonHover}
+                onClick={() => setViewMode(id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={{
+                  background: viewMode === id ? "var(--bg-card)" : "transparent",
+                  color: viewMode === id ? "var(--accent-primary)" : "var(--text-muted)",
+                  boxShadow: viewMode === id ? "var(--shadow-sm)" : "none",
+                }}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </motion.button>
+            ))}
           </div>
-        </header>
+        </div>
 
-        <section className="space-y-10">
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-300">Fast Add</h2>
-            <TaskForm />
-          </div>
-
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
-              <h2 className="text-lg font-semibold text-zinc-300">Your Tasks</h2>
-              <div className="flex items-center bg-zinc-900 rounded-lg p-1">
-                <button
-                  onClick={() => setViewMode("flat")}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                    viewMode === "flat" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  <LayoutList className="w-3.5 h-3.5" /> List
-                </button>
-                <button
-                  onClick={() => setViewMode("goal")}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                    viewMode === "goal" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  <Target className="w-3.5 h-3.5" /> Goal
-                </button>
-                <button
-                  onClick={() => setViewMode("date")}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                    viewMode === "date" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  <Calendar className="w-3.5 h-3.5" /> Date
-                </button>
-              </div>
-            </div>
-
-            <TaskList viewMode={viewMode} />
-          </div>
-        </section>
-      </div>
-    </div>
+        <TaskList viewMode={viewMode} />
+      </motion.section>
+    </motion.div>
   );
 }

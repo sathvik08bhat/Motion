@@ -41,4 +41,6 @@ export const OS_EVENTS = {
   TASK_MISSED: "task_missed",
   TASK_UPCOMING: "task_upcoming",
   PLAN_CREATED: "plan_created",
+  ACTION_EXECUTED: "action_executed",
 } as const;
+
