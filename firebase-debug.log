@@ -17,3 +17,108 @@ You're about to initialize a Firebase project in this directory:
 
   C:\Users\sathv\.gemini\antigravity\scratch\Motion
 
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-04-23T08:16:25.495Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-23T08:16:25.496Z] > authorizing via signed-in user (sathvi2018@gmail.com)
+[debug] [2026-04-23T08:16:25.497Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:25.497Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:25.499Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=100
+[debug] [2026-04-23T08:16:26.458Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2026-04-23T08:16:26.458Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[info] 
+=== App Hosting Setup
+[debug] [2026-04-23T08:16:31.610Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:31.610Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:31.611Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/motion-os-productivity/billingInfo [none]
+[debug] [2026-04-23T08:16:32.657Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/motion-os-productivity/billingInfo 200
+[debug] [2026-04-23T08:16:32.657Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/motion-os-productivity/billingInfo {"name":"projects/motion-os-productivity/billingInfo","projectId":"motion-os-productivity","billingAccountName":"billingAccounts/016A9A-ABCA93-C9BD4F","billingEnabled":true}
+[debug] [2026-04-23T08:16:32.658Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:32.658Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:32.658Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/firebaseapphosting.googleapis.com [none]
+[debug] [2026-04-23T08:16:32.658Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/firebaseapphosting.googleapis.com  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:35.670Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/firebaseapphosting.googleapis.com 200
+[debug] [2026-04-23T08:16:35.670Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/firebaseapphosting.googleapis.com [omitted]
+[debug] [2026-04-23T08:16:35.671Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:35.671Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:35.671Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/firebaseapphosting.googleapis.com:enable [none]
+[debug] [2026-04-23T08:16:35.671Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/firebaseapphosting.googleapis.com:enable  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:37.003Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/firebaseapphosting.googleapis.com:enable 200
+[debug] [2026-04-23T08:16:37.004Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/firebaseapphosting.googleapis.com:enable [omitted]
+[debug] [2026-04-23T08:16:47.018Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.018Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.018Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.018Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.019Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.019Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.019Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.019Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.019Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.019Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.019Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.019Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:47.020Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/developerconnect.googleapis.com [none]
+[debug] [2026-04-23T08:16:47.020Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/developerconnect.googleapis.com  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:47.021Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/cloudbuild.googleapis.com [none]
+[debug] [2026-04-23T08:16:47.021Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/cloudbuild.googleapis.com  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:47.022Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/secretmanager.googleapis.com [none]
+[debug] [2026-04-23T08:16:47.022Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/secretmanager.googleapis.com  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:47.023Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/run.googleapis.com [none]
+[debug] [2026-04-23T08:16:47.023Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/run.googleapis.com  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:47.024Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/artifactregistry.googleapis.com [none]
+[debug] [2026-04-23T08:16:47.025Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/artifactregistry.googleapis.com  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:47.026Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/iam.googleapis.com [none]
+[debug] [2026-04-23T08:16:47.026Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/iam.googleapis.com  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:49.012Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/cloudbuild.googleapis.com 200
+[debug] [2026-04-23T08:16:49.013Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/cloudbuild.googleapis.com [omitted]
+[debug] [2026-04-23T08:16:49.071Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/iam.googleapis.com 200
+[debug] [2026-04-23T08:16:49.071Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/iam.googleapis.com [omitted]
+[debug] [2026-04-23T08:16:49.077Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/artifactregistry.googleapis.com 200
+[debug] [2026-04-23T08:16:49.077Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/artifactregistry.googleapis.com [omitted]
+[debug] [2026-04-23T08:16:49.220Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/run.googleapis.com 200
+[debug] [2026-04-23T08:16:49.220Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/run.googleapis.com [omitted]
+[debug] [2026-04-23T08:16:49.291Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/developerconnect.googleapis.com 200
+[debug] [2026-04-23T08:16:49.291Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/developerconnect.googleapis.com [omitted]
+[debug] [2026-04-23T08:16:49.291Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:49.291Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:16:49.291Z] >>> [apiv2][query] POST https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/developerconnect.googleapis.com:enable [none]
+[debug] [2026-04-23T08:16:49.291Z] >>> [apiv2][(partial)header] POST https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/developerconnect.googleapis.com:enable  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:16:49.930Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/secretmanager.googleapis.com 200
+[debug] [2026-04-23T08:16:49.930Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/secretmanager.googleapis.com [omitted]
+[debug] [2026-04-23T08:16:51.130Z] <<< [apiv2][status] POST https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/developerconnect.googleapis.com:enable 200
+[debug] [2026-04-23T08:16:51.130Z] <<< [apiv2][body] POST https://serviceusage.googleapis.com/v1/projects/motion-os-productivity/services/developerconnect.googleapis.com:enable [omitted]
+[debug] [2026-04-23T08:17:01.151Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:01.152Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:01.152Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts/firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com:testIamPermissions [none]
+[debug] [2026-04-23T08:17:01.152Z] >>> [apiv2][(partial)header] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts/firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com:testIamPermissions  x-goog-user-project=motion-os-productivity
+[debug] [2026-04-23T08:17:01.152Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts/firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2026-04-23T08:17:03.374Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts/firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com:testIamPermissions 404
+[debug] [2026-04-23T08:17:03.375Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts/firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com:testIamPermissions {"error":{"code":404,"message":"Unknown service account","status":"NOT_FOUND"}}
+[debug] [2026-04-23T08:17:03.376Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:03.376Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:03.376Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts [none]
+[debug] [2026-04-23T08:17:03.376Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts {"accountId":"firebase-app-hosting-compute","serviceAccount":{"displayName":"Firebase App Hosting compute service account","description":"Default service account used to run builds and deploys for Firebase App Hosting"}}
+[debug] [2026-04-23T08:17:04.434Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts 200
+[debug] [2026-04-23T08:17:04.434Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/motion-os-productivity/serviceAccounts [omitted]
+[debug] [2026-04-23T08:17:04.434Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:04.434Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:04.434Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/motion-os-productivity:getIamPolicy [none]
+[debug] [2026-04-23T08:17:06.549Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/motion-os-productivity:getIamPolicy 200
+[debug] [2026-04-23T08:17:06.550Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/motion-os-productivity:getIamPolicy {"version":1,"etag":"BwZQHES8E4g=","bindings":[{"role":"roles/cloudbuild.builds.builder","members":["serviceAccount:215075717946@cloudbuild.gserviceaccount.com"]},{"role":"roles/cloudbuild.serviceAgent","members":["serviceAccount:service-215075717946@gcp-sa-cloudbuild.iam.gserviceaccount.com"]},{"role":"roles/containerregistry.ServiceAgent","members":["serviceAccount:service-215075717946@containerregistry.iam.gserviceaccount.com"]},{"role":"roles/firebase.managementServiceAgent","members":["serviceAccount:service-215075717946@gcp-sa-firebase.iam.gserviceaccount.com"]},{"role":"roles/firebase.sdkAdminServiceAgent","members":["serviceAccount:firebase-adminsdk-fbsvc@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/firebaseauth.admin","members":["serviceAccount:firebase-adminsdk-fbsvc@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/firebasestorage.serviceAgent","members":["serviceAccount:service-215075717946@gcp-sa-firebasestorage.iam.gserviceaccount.com"]},{"role":"roles/iam.serviceAccountTokenCreator","members":["serviceAccount:firebase-adminsdk-fbsvc@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/owner","members":["user:sathvi2018@gmail.com"]},{"role":"roles/run.serviceAgent","members":["serviceAccount:service-215075717946@serverless-robot-prod.iam.gserviceaccount.com"]},{"role":"roles/storage.admin","members":["serviceAccount:firebase-adminsdk-fbsvc@motion-os-productivity.iam.gserviceaccount.com"]}]}
+[debug] [2026-04-23T08:17:06.550Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:06.550Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:06.550Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/motion-os-productivity:setIamPolicy [none]
+[debug] [2026-04-23T08:17:06.550Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/motion-os-productivity:setIamPolicy {"policy":{"version":1,"etag":"BwZQHES8E4g=","bindings":[{"role":"roles/cloudbuild.builds.builder","members":["serviceAccount:215075717946@cloudbuild.gserviceaccount.com"]},{"role":"roles/cloudbuild.serviceAgent","members":["serviceAccount:service-215075717946@gcp-sa-cloudbuild.iam.gserviceaccount.com"]},{"role":"roles/containerregistry.ServiceAgent","members":["serviceAccount:service-215075717946@containerregistry.iam.gserviceaccount.com"]},{"role":"roles/firebase.managementServiceAgent","members":["serviceAccount:service-215075717946@gcp-sa-firebase.iam.gserviceaccount.com"]},{"role":"roles/firebase.sdkAdminServiceAgent","members":["serviceAccount:firebase-adminsdk-fbsvc@motion-os-productivity.iam.gserviceaccount.com","serviceAccount:firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/firebaseauth.admin","members":["serviceAccount:firebase-adminsdk-fbsvc@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/firebasestorage.serviceAgent","members":["serviceAccount:service-215075717946@gcp-sa-firebasestorage.iam.gserviceaccount.com"]},{"role":"roles/iam.serviceAccountTokenCreator","members":["serviceAccount:firebase-adminsdk-fbsvc@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/owner","members":["user:sathvi2018@gmail.com"]},{"role":"roles/run.serviceAgent","members":["serviceAccount:service-215075717946@serverless-robot-prod.iam.gserviceaccount.com"]},{"role":"roles/storage.admin","members":["serviceAccount:firebase-adminsdk-fbsvc@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/firebaseapphosting.computeRunner","members":["serviceAccount:firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/developerconnect.readTokenAccessor","members":["serviceAccount:firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com"]},{"role":"roles/storage.objectViewer","members":["serviceAccount:firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com"]}]},"updateMask":"bindings"}
+[debug] [2026-04-23T08:17:07.439Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/motion-os-productivity:setIamPolicy 400
+[debug] [2026-04-23T08:17:07.440Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/motion-os-productivity:setIamPolicy {"error":{"code":400,"message":"Service account firebase-app-hosting-compute@motion-os-productivity.iam.gserviceaccount.com does not exist.","status":"INVALID_ARGUMENT"}}
+[warn] !  Your App Hosting compute service account is still being provisioned in the background. If you encounter an error, please try again after a few moments. 
+[info] i  This command links your local project to Firebase App Hosting. You will be able to deploy your web app with `firebase deploy` after setup. 
+[debug] [2026-04-23T08:17:14.038Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:14.039Z] Checked if tokens are valid: true, expires at: 1776935701920
+[debug] [2026-04-23T08:17:14.039Z] >>> [apiv2][query] GET https://firebaseapphosting.googleapis.com/v1beta/projects/motion-os-productivity/locations/-/backends 
+[debug] [2026-04-23T08:17:16.158Z] <<< [apiv2][status] GET https://firebaseapphosting.googleapis.com/v1beta/projects/motion-os-productivity/locations/-/backends 200
+[debug] [2026-04-23T08:17:16.159Z] <<< [apiv2][body] GET https://firebaseapphosting.googleapis.com/v1beta/projects/motion-os-productivity/locations/-/backends {}
