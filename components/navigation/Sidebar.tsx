@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Focus, Eye, Terminal, CheckSquare, Target,
   CalendarDays, FileText, ScrollText, Settings, Plus, ChevronDown,
-  Sun, Moon, Zap, Lock, ShieldCheck, Layout
+  Sun, Moon, Zap, Lock, ShieldCheck, Layout, HeartPulse
 } from "lucide-react";
 import { useAppTheme } from "../providers/ThemeProvider";
 import { useState } from "react";
@@ -13,15 +13,16 @@ import { motion } from "framer-motion";
 import { slideUp, buttonHover, listItemHover } from "../../lib/animations";
 
 const NAV_ITEMS = [
-  { href: "/",           label: "Dashboard",  icon: LayoutDashboard },
-  { href: "/workspace",  label: "Workspace",  icon: Layout },
-  { href: "/execution",  label: "Execution Hub", icon: Focus },
-  { href: "/tasks",      label: "Tasks",      icon: CheckSquare },
-  { href: "/vision",     label: "Vision Hub", icon: Target },
-  { href: "/thinking",   label: "Thinking Hub", icon: FileText },
-  { href: "/agent",      label: "Control Hub",  icon: ShieldCheck },
-  { href: "/vault",      label: "Vault",      icon: Lock },
-  { href: "/settings",   label: "Settings",   icon: Settings },
+  { href: "/",           label: "Dashboard",    icon: LayoutDashboard, group: "core" },
+  { href: "/workspace",  label: "Workspace",    icon: Layout, group: "core" },
+  { href: "/execution",  label: "Execution Hub", icon: Focus, group: "core" },
+  { href: "/tasks",      label: "Tasks",        icon: CheckSquare, group: "core" },
+  { href: "/vision",     label: "Vision Hub",   icon: Target, group: "core" },
+  { href: "/thinking",   label: "Thinking Hub", icon: FileText, group: "core" },
+  { href: "/fitness",    label: "Fitness Hub",  icon: HeartPulse, group: "health" },
+  { href: "/agent",      label: "Control Hub",  icon: ShieldCheck, group: "system" },
+  { href: "/vault",      label: "Vault",        icon: Lock, group: "system" },
+  { href: "/settings",   label: "Settings",     icon: Settings, group: "system" },
 ];
 
 export default function Sidebar() {
@@ -83,59 +84,63 @@ export default function Sidebar() {
         </motion.button>
       </div>
 
-      {/* ── Navigation ───────────────────── */}
       <nav className={`flex-1 space-y-0.5 overflow-y-auto ${isCollapsed ? "px-2" : "px-3"}`}>
-        {NAV_ITEMS.map(({ href, label, icon: Icon }, i) => {
+        {NAV_ITEMS.map(({ href, label, icon: Icon, group }, i) => {
           const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
+          const prevGroup = i > 0 ? NAV_ITEMS[i - 1].group : group;
+          const showDivider = i > 0 && group !== prevGroup;
           return (
-            <motion.div
-              key={href}
-              variants={slideUp}
-              initial="initial"
-              animate="animate"
-              transition={{ delay: i * 0.05 }}
-            >
-              <Link
-                href={href}
-                className={`nav-item group transition-all duration-300 ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center p-2' : ''}`}
-                style={{
-                  textDecoration: 'none',
-                }}
-              >
-                <motion.div
-                  className={`flex items-center ${isCollapsed ? "" : "gap-3"} w-full`}
-                  whileHover={{ x: isCollapsed ? 0 : 6 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                >
-                  <Icon
-                    className="w-4.5 h-4.5 flex-shrink-0 transition-colors duration-300"
-                    style={{ 
-                      color: isActive ? "var(--accent-primary)" : "var(--text-muted)" 
-                    }}
-                  />
-                  <span 
-                    className="flex-1 transition-colors duration-300"
-                    style={{ 
-                      color: isActive ? "var(--sidebar-active-text)" : "var(--text-secondary)",
-                    }}
-                  >
-                    {label}
+            <div key={href}>
+              {showDivider && !isCollapsed && (
+                <div className="flex items-center gap-2 px-2 pt-4 pb-1.5">
+                  <div className="flex-1 h-px" style={{ background: "var(--border-subtle)" }} />
+                  <span className="text-[8px] font-black uppercase tracking-[0.15em]" style={{ color: "var(--text-muted)" }}>
+                    {group}
                   </span>
-                  
-                  {isActive && (
-                    <motion.div
-                      layoutId="active-pill"
-                      className="w-1 h-4 rounded-full"
-                      style={{ background: "var(--accent-primary)" }}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.2 }}
+                </div>
+              )}
+              {showDivider && isCollapsed && <div className="my-2 h-px mx-2" style={{ background: "var(--border-subtle)" }} />}
+              <motion.div
+                variants={slideUp}
+                initial="initial"
+                animate="animate"
+                transition={{ delay: i * 0.05 }}
+              >
+                <Link
+                  href={href}
+                  className={`nav-item group transition-all duration-300 ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center p-2' : ''}`}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <motion.div
+                    className={`flex items-center ${isCollapsed ? "" : "gap-3"} w-full`}
+                    whileHover={{ x: isCollapsed ? 0 : 6 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  >
+                    <Icon
+                      className="w-4.5 h-4.5 flex-shrink-0 transition-colors duration-300"
+                      style={{ color: isActive ? "var(--accent-primary)" : "var(--text-muted)" }}
                     />
-                  )}
-                </motion.div>
-              </Link>
-            </motion.div>
+                    <span
+                      className="flex-1 transition-colors duration-300"
+                      style={{ color: isActive ? "var(--sidebar-active-text)" : "var(--text-secondary)" }}
+                    >
+                      {label}
+                    </span>
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-pill"
+                        className="w-1 h-4 rounded-full"
+                        style={{ background: "var(--accent-primary)" }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                      />
+                    )}
+                  </motion.div>
+                </Link>
+              </motion.div>
+            </div>
           );
         })}
       </nav>
