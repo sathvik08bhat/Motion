@@ -16,6 +16,8 @@ interface MotionState {
   updateTask: (taskId: number, updates: Partial<Task>) => void;
   bulkUpdateTasks: (updates: { id: number; updates: Partial<Task> }[]) => void;
   deleteTask: (taskId: number) => void;
+  updateGoal: (goalId: number, updates: Partial<Goal>) => void;
+  deleteGoal: (goalId: number) => void;
   installedModules: string[];
   installModule: (name: string) => void;
   uninstallModule: (name: string) => void;
@@ -65,6 +67,18 @@ export const useStore = create<MotionState>()(
       deleteTask: (taskId) =>
         set((state) => ({
           tasks: state.tasks.filter((task) => task.id !== taskId),
+        })),
+
+      updateGoal: (goalId, updates) =>
+        set((state) => ({
+          goals: state.goals.map((goal) =>
+            goal.id === goalId ? { ...goal, ...updates } : goal
+          ),
+        })),
+
+      deleteGoal: (goalId) =>
+        set((state) => ({
+          goals: state.goals.filter((goal) => goal.id !== goalId),
         })),
 
       installedModules: ['Calendar', 'Study'], // Default modules

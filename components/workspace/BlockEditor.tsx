@@ -212,21 +212,67 @@ const BlockNode = React.memo(function BlockNode({ block, onUpdate, onAdd, onDele
           )}
 
           {/* Actual Content Editor */}
-          <div
-            ref={contentRef}
-            contentEditable
-            suppressContentEditableWarning
-            onKeyDown={handleKeyDown}
-            onInput={handleInput}
-            className={`w-full outline-none break-words whitespace-pre-wrap min-h-[24px] ${
-              block.type === "heading" ? "text-3xl font-black text-white mt-6 mb-2" : 
-              block.type === "todo" ? `text-base ${block.checked ? "line-through text-zinc-600" : "text-zinc-200"}` : 
-              "text-base text-zinc-300 leading-relaxed"
-            }`}
-            data-placeholder={block.type === "heading" ? "Heading..." : "Type '/' for commands"}
-          >
-            {/* We only inject initial text if it's not currently focused to avoid cursor jumping */}
-            {block.content}
+          <div className="flex-1 w-full min-w-0">
+            <div
+              ref={contentRef}
+              contentEditable
+              suppressContentEditableWarning
+              onKeyDown={handleKeyDown}
+              onInput={handleInput}
+              className={`w-full outline-none break-words whitespace-pre-wrap min-h-[24px] ${
+                block.type === "heading" ? "text-3xl font-black text-white mt-6 mb-2" : 
+                block.type === "todo" ? `text-base ${block.checked ? "line-through text-zinc-600" : "text-zinc-200"}` : 
+                ["timeline", "chart", "table", "progress", "stat", "tasklist"].includes(block.type) ? "text-lg font-black text-white mb-2" :
+                "text-base text-zinc-300 leading-relaxed"
+              }`}
+              data-placeholder={block.type === "heading" ? "Heading..." : "Type '/' for commands"}
+            >
+              {/* We only inject initial text if it's not currently focused to avoid cursor jumping */}
+              {block.content}
+            </div>
+
+            {/* Rich Component Rendering */}
+            {block.type === "stat" && (
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 my-2 flex items-center justify-between max-w-sm">
+                <div className="text-3xl font-black text-white">
+                  {block.props?.value || 0}
+                  <span className="text-sm text-zinc-500 ml-1 font-bold">{block.props?.suffix || ""}</span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20">
+                  <span className="text-xs font-bold text-indigo-400">{block.props?.icon || "Stat"}</span>
+                </div>
+              </div>
+            )}
+
+            {block.type === "progress" && (
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 my-2 max-w-sm space-y-3">
+                <div className="flex justify-between items-end">
+                  <span className="text-sm text-zinc-400 font-bold">{block.props?.target || 100} {block.props?.unit || "%"} Goal</span>
+                </div>
+                <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="w-1/3 h-full bg-indigo-500 rounded-full" />
+                </div>
+              </div>
+            )}
+
+            {block.type === "tasklist" && (
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 my-2 max-w-md space-y-2">
+                {(block.props?.items || ["Task 1", "Task 2"]).map((item: string, i: number) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-white/5 rounded-xl text-sm font-bold border border-white/5">
+                    <div className="w-4 h-4 rounded border border-zinc-700" />
+                    <span className="text-zinc-200">{item}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {["timeline", "chart", "table"].includes(block.type) && (
+              <div className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-8 my-2 flex items-center justify-center border-dashed">
+                <span className="text-xs font-black uppercase tracking-widest text-zinc-600">
+                  [{block.type.toUpperCase()} COMPONENT PLACEHOLDER]
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

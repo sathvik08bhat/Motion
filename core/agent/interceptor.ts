@@ -19,6 +19,12 @@ export async function interceptAction(action: AgentAction): Promise<{
   // - Only decide status
   // - Always return action unchanged
 
+  // --- CRITICAL SAFETY RULE ---
+  // Some actions are so destructive they ALWAYS require confirmation
+  if (action.type === "clear_all_tasks") {
+    return { status: "pending", action };
+  }
+
   if (mode === "suggest_only") {
     return {
       status: "rejected",

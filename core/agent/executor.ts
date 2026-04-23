@@ -165,6 +165,13 @@ export async function executeAction(action: AgentAction): Promise<{ success: boo
         savePreviousState(action, { pageId, operation });
         break;
       }
+      
+      case "clear_all_tasks": {
+        const allTasks = await db.tasks.toArray();
+        savePreviousState(action, allTasks);
+        await db.tasks.clear();
+        break;
+      }
 
       default:
 

@@ -6,9 +6,9 @@ import AppInitializer from "../components/AppInitializer";
 import ActionConfirmationModal from "../components/agent/ActionConfirmationModal";
 import UndoBanner from "../components/agent/UndoBanner";
 import Sidebar from "../components/navigation/Sidebar";
-import Topbar from "../components/navigation/Topbar";
+import MainLayout from "../components/navigation/MainLayout";
 import ThemeProvider from "../components/providers/ThemeProvider";
-import { AnimatePresence } from "framer-motion";
+import GuidedBuilderModal from "../components/agent/GuidedBuilderModal";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,17 +40,9 @@ export default function RootLayout({
             <Sidebar />
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col md:ml-64 relative h-full overflow-hidden">
-              {/* Global Topbar */}
-              <Topbar />
-
-              {/* Page Content (Scrollable) */}
-              <div className="flex-1 overflow-y-auto" style={{ background: "var(--bg-primary)" }}>
-                <AnimatePresence mode="wait">
-                  {children}
-                </AnimatePresence>
-              </div>
-            </main>
+            <MainLayout>
+              {children}
+            </MainLayout>
           </div>
 
           {/* Global Overlays & Utilities */}
@@ -58,6 +50,7 @@ export default function RootLayout({
           <CommandPalette />
           <ActionConfirmationModal />
           <UndoBanner />
+          <GuidedBuilderModal />
         </ThemeProvider>
       </body>
     </html>

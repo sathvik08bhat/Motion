@@ -3,7 +3,7 @@
 import { useStore } from "../../core/store";
 import { updateTask as updateTaskInDb, type Task } from "../../data/db";
 import { CheckCircle2, Circle, Clock, Target, Calendar, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cardHover, buttonHover } from "../../lib/animations";
 import { eventBus, OS_EVENTS } from "../../core/events";
 
@@ -46,11 +46,29 @@ export default function TaskList({ viewMode }: TaskListProps) {
         onClick={() => toggleTask(task)}
         className="text-zinc-600 hover:text-indigo-400 transition-colors"
       >
-        {task.status === "done" ? (
-          <CheckCircle2 className="w-6 h-6 text-indigo-500" />
-        ) : (
-          <Circle className="w-6 h-6" />
-        )}
+        <AnimatePresence mode="wait" initial={false}>
+          {task.status === "done" ? (
+            <motion.div
+              key="done"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            >
+              <CheckCircle2 className="w-6 h-6 text-indigo-500" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="todo"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            >
+              <Circle className="w-6 h-6" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.button>
       
       <div className="flex-1 min-w-0">

@@ -4,6 +4,7 @@ import { LifeDomain } from "../core/agent/domains";
 export interface Goal {
   id?: number;
   title: string;
+  description?: string;
   deadline: Date;
   priority: "low" | "medium" | "high";
   status: "not-started" | "in-progress" | "completed";
@@ -76,10 +77,11 @@ export interface DailyStats {
 
 export interface Block {
   id: string;
-  type: "text" | "heading" | "todo" | "toggle";
+  type: "text" | "heading" | "todo" | "toggle" | "timeline" | "chart" | "table" | "progress" | "stat" | "tasklist";
   content: string;
   children?: Block[];
   checked?: boolean;
+  props?: Record<string, any>;
 }
 
 export interface Page {
@@ -154,6 +156,14 @@ export const addGoal = async (goal: Omit<Goal, "id">) => {
 
 export const getGoals = async () => {
   return await db.goals.toArray();
+};
+
+export const updateGoal = async (id: number, updates: Partial<Goal>) => {
+  return await db.goals.update(id, updates);
+};
+
+export const deleteGoal = async (id: number) => {
+  return await db.goals.delete(id);
 };
 
 export const addTask = async (task: Omit<Task, "id">) => {

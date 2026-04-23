@@ -206,8 +206,8 @@ export async function getAutoRescheduledUpdates(tasks: Task[]): Promise<Schedule
   
   const now = new Date();
   const overdueTasks = tasks
-    .filter((t) => t.status !== "done" && t.scheduledAt.getTime() < now.getTime())
-    .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
+    .filter((t) => t.status !== "done" && t.scheduledAt && new Date(t.scheduledAt).getTime() < now.getTime())
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
   if (overdueTasks.length === 0) return [];
 

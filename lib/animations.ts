@@ -41,7 +41,7 @@ export const buttonHover = {
     scale: 1.05,
     filter: "brightness(0.95)"
   },
-  whileTap: { scale: 0.95 },
+  whileTap: { scale: 0.93, filter: "brightness(1.1)" },
   transition: { type: "spring" as const, stiffness: 500, damping: 15 }
 };
 

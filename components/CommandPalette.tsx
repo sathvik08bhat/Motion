@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useStore } from "../core/store";
-import { Command, Search, Target, ListTodo, X, Sparkles, Wand2, Calendar, CheckCircle2, Loader2, ArrowRight } from "lucide-react";
+import { Command, Search, Target, ListTodo, X, Sparkles, Wand2, Calendar, CheckCircle2, Loader2, ArrowRight, Trash2 } from "lucide-react";
 import { parseCommand, generateTasksFromGoal } from "../lib/ai";
 import { calculateSchedule } from "../lib/scheduler";
 import { addGoal as addGoalToDb } from "../data/db";
@@ -12,8 +12,8 @@ import { registry } from "../core/modules/registry";
 import { runAgentAction } from "../core/agent/orchestrator";
 import { createAgentAction, createAction } from "../core/agent/types";
 import { processIntent, validateIntentResponse } from "../core/agent/intent";
-
 import { addIntent } from "../data/db";
+import { motion, AnimatePresence } from "framer-motion";
 
 
 
@@ -125,6 +125,21 @@ export default function CommandPalette() {
           break;
         }
 
+        case "clear_all_tasks": {
+          const action = createAgentAction("clear_all_tasks", {}, "User requested to clear all tasks for a fresh start.");
+          await runAgentAction(action);
+          setAiResult({ intent: "clear_all_tasks", data: {} });
+          break;
+        }
+
+        case "build_module": {
+          const { useModuleBuilder } = await import("../core/agent/moduleBuilder");
+          useModuleBuilder.getState().startBuilder(input);
+          setPaletteOpen(false);
+          setQuery("");
+          break;
+        }
+
 
         default: {
           // If the specialized parser doesn't know what to do, use the general Intent Processor
@@ -188,183 +203,228 @@ export default function CommandPalette() {
   };
 
 
-  if (!isPaletteOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
-        onClick={() => {
-          setPaletteOpen(false);
-          setAiResult(null);
-          setQuery("");
-        }}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-top-4 duration-200">
-        <div className="p-4 border-b border-zinc-800 flex items-center gap-3 bg-zinc-900/50 backdrop-blur-md">
-          {isProcessing ? (
-            <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
-          ) : (
-            <Search className="w-5 h-5 text-zinc-500" />
-          )}
-          <input
-            autoFocus
-            type="text"
-            placeholder="Ask Motion anything... (e.g. 'What's next?')"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
+    <AnimatePresence>
+      {isPaletteOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => {
+              setPaletteOpen(false);
               setAiResult(null);
+              setQuery("");
             }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleSmartAction();
-              }
-            }}
-            className="flex-1 bg-transparent border-none outline-none text-zinc-100 placeholder:text-zinc-600 font-medium"
           />
-          <div className="flex items-center gap-2">
-             <kbd className="hidden sm:block px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-zinc-400 font-black tracking-widest uppercase">Enter</kbd>
-             <button 
-              onClick={() => {
-                setPaletteOpen(false);
-                setAiResult(null);
-                setQuery("");
-              }}
-              className="p-1 hover:bg-zinc-800 rounded-md transition-colors"
-            >
-              <X className="w-4 h-4 text-zinc-500" />
-            </button>
-          </div>
-        </div>
 
-        <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-hide">
-          {/* AI Result Section */}
-          {aiResult && (
-            <div className="p-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-xl p-4 space-y-3">
-                <div className="flex items-center gap-2 text-indigo-400">
-                  <Sparkles className="w-4 h-4" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Motion AI Result</span>
-                </div>
-                
-                {aiResult.intent === "plan_day" && (
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
-                      <Wand2 className="w-5 h-5 text-indigo-400" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
+          >
+            <div className="p-4 border-b border-zinc-800 flex items-center gap-3 bg-zinc-900/50 backdrop-blur-md">
+              {isProcessing ? (
+                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+              ) : (
+                <Search className="w-5 h-5 text-zinc-500" />
+              )}
+              <input
+                autoFocus
+                type="text"
+                placeholder="Ask Motion anything... (e.g. 'What's next?')"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setAiResult(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSmartAction();
+                  }
+                }}
+                className="flex-1 bg-transparent border-none outline-none text-zinc-100 placeholder:text-zinc-600 font-medium"
+              />
+              <div className="flex items-center gap-2">
+                <kbd className="hidden sm:block px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-zinc-400 font-black tracking-widest uppercase">Enter</kbd>
+                <button
+                  onClick={() => {
+                    setPaletteOpen(false);
+                    setAiResult(null);
+                    setQuery("");
+                  }}
+                  className="p-1 hover:bg-zinc-800 rounded-md transition-colors"
+                >
+                  <X className="w-4 h-4 text-zinc-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-hide relative">
+              <AnimatePresence>
+                {isProcessing && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-2">
+                      <div className="bg-zinc-800/20 border border-zinc-800/50 rounded-xl p-4 space-y-3 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" style={{ backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite linear" }} />
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded bg-zinc-800" />
+                          <div className="w-24 h-3 rounded bg-zinc-800" />
+                        </div>
+                        <div className="flex gap-4">
+                          <div className="w-10 h-10 rounded-full bg-zinc-800" />
+                          <div className="space-y-2 flex-1">
+                            <div className="w-1/3 h-4 rounded bg-zinc-800" />
+                            <div className="w-2/3 h-3 rounded bg-zinc-800/50" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Day Optimized</p>
-                      <p className="text-xs text-indigo-300/60">I have re-slotted {aiResult.data.count} tasks for maximum efficiency.</p>
-                    </div>
-                  </div>
+                  </motion.div>
                 )}
+              </AnimatePresence>
 
-                {aiResult.intent === "get_next_task" && (
-                  <div className="flex items-center gap-4">
-                    {aiResult.data.nextTask ? (
-                      <>
+              {aiResult && (
+                <div className="p-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-indigo-400">
+                      <Sparkles className="w-4 h-4" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Motion AI Result</span>
+                    </div>
+
+                    {aiResult.intent === "plan_day" && (
+                      <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
-                          <ArrowRight className="w-5 h-5 text-indigo-400" />
+                          <Wand2 className="w-5 h-5 text-indigo-400" />
                         </div>
-                        <div className="flex-1">
-                          <p className="text-[10px] font-black text-indigo-400/60 uppercase">Next Action</p>
-                          <p className="text-sm font-bold text-white">{aiResult.data.nextTask.title}</p>
-                          <p className="text-[10px] text-zinc-500">Scheduled for {new Date(aiResult.data.nextTask.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                        <div>
+                          <p className="text-sm font-bold text-white">Day Optimized</p>
+                          <p className="text-xs text-indigo-300/60">I have re-slotted {aiResult.data.count} tasks for maximum efficiency.</p>
                         </div>
-                        <CheckCircle2 className="w-5 h-5 text-indigo-500/40" />
-                      </>
-                    ) : (
-                      <p className="text-sm text-zinc-400 italic">No upcoming tasks found. Use 'Create task' to add some.</p>
+                      </div>
+                    )}
+
+                    {aiResult.intent === "clear_all_tasks" && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                          <Trash2 className="w-5 h-5 text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Tasks Cleared</p>
+                          <p className="text-xs text-red-300/60">Your task list has been reset for a fresh start.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {aiResult.intent === "get_next_task" && (
+                      <div className="flex items-center gap-4">
+                        {aiResult.data.nextTask ? (
+                          <>
+                            <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                              <ArrowRight className="w-5 h-5 text-indigo-400" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[10px] font-black text-indigo-400/60 uppercase">Next Action</p>
+                              <p className="text-sm font-bold text-white">{aiResult.data.nextTask.title}</p>
+                              <p className="text-[10px] text-zinc-500">Scheduled for {new Date(aiResult.data.nextTask.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                            </div>
+                            <CheckCircle2 className="w-5 h-5 text-indigo-500/40" />
+                          </>
+                        ) : (
+                          <p className="text-sm text-zinc-400 italic">No upcoming tasks found. Use &apos;Create task&apos; to add some.</p>
+                        )}
+                      </div>
+                    )}
+
+                    {aiResult.intent === "create_goal" && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                          <Target className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Goal Created: {aiResult.data.title}</p>
+                          <p className="text-xs text-indigo-300/60">AI has architected {aiResult.data.taskCount} tasks for this objective.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {aiResult.intent === "create_task" && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                          <ListTodo className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Task Created: {aiResult.data.title}</p>
+                          <p className="text-xs text-indigo-300/60">Estimated duration: {aiResult.data.duration}m. Added to today&apos;s list.</p>
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
+                </div>
+              )}
 
-                {aiResult.intent === "create_goal" && (
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
-                      <Target className="w-5 h-5 text-indigo-400" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Goal Created: {aiResult.data.title}</p>
-                      <p className="text-xs text-indigo-300/60">AI has architected {aiResult.data.taskCount} tasks for this objective.</p>
-                    </div>
+              {!aiResult && query.trim() && !filteredCommands.some(c => c.title.toLowerCase() === query.toLowerCase()) && (
+                <button
+                  onClick={() => handleSmartAction()}
+                  className="w-full flex items-center gap-4 p-3 hover:bg-zinc-800/50 rounded-xl transition-all group border border-dashed border-zinc-800 hover:border-indigo-500/30 mb-2"
+                >
+                  <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors animate-pulse">
+                    <Sparkles className="w-5 h-5" />
                   </div>
-                )}
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-bold text-zinc-100 group-hover:text-white">Ask AI to &ldquo;{query}&rdquo;</p>
+                    <p className="text-[10px] text-zinc-500 font-medium">Auto-detect intent and execute system action</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-zinc-700 group-hover:text-indigo-500 transition-all group-hover:translate-x-1" />
+                </button>
+              )}
 
-                {aiResult.intent === "create_task" && (
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
-                      <ListTodo className="w-5 h-5 text-indigo-400" />
+              <div className="space-y-1">
+                {filteredCommands.length > 0 && filteredCommands.map((cmd) => (
+                  <button
+                    key={cmd.id}
+                    onClick={() => runCommand(cmd)}
+                    className="w-full flex items-center gap-4 p-3 hover:bg-indigo-600/10 rounded-xl transition-all group border border-transparent hover:border-indigo-500/20"
+                  >
+                    <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors">
+                      <cmd.icon className="w-5 h-5" />
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Task Created: {aiResult.data.title}</p>
-                      <p className="text-xs text-indigo-300/60">Estimated duration: {aiResult.data.duration}m. Added to today's list.</p>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-zinc-100 group-hover:text-white">{cmd.title}</p>
+                      <p className="text-[10px] text-zinc-500 font-medium">{cmd.description}</p>
                     </div>
+                    <div className="hidden group-hover:block text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2">
+                      Jump To
+                    </div>
+                  </button>
+                ))}
+                {filteredCommands.length === 0 && !query.trim() && (
+                  <div className="p-8 text-center text-zinc-500 text-sm italic">
+                    No matching commands found.
                   </div>
                 )}
               </div>
             </div>
-          )}
 
-          {/* Smart Command Suggestion */}
-          {!aiResult && query.trim() && !filteredCommands.some(c => c.title.toLowerCase() === query.toLowerCase()) && (
-            <button
-               onClick={() => handleSmartAction()}
-               className="w-full flex items-center gap-4 p-3 hover:bg-zinc-800/50 rounded-xl transition-all group border border-dashed border-zinc-800 hover:border-indigo-500/30 mb-2"
-            >
-              <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors animate-pulse">
-                <Sparkles className="w-5 h-5" />
+            <div className="p-3 bg-zinc-950/50 border-t border-zinc-900 flex justify-between items-center text-[10px] font-black text-zinc-700 uppercase tracking-[0.2em]">
+              <div className="flex gap-4">
+                <span>↑↓ Navigate</span>
+                <span>↵ Enter to Ask AI</span>
               </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-zinc-100 group-hover:text-white">Ask AI to &ldquo;{query}&rdquo;</p>
-                <p className="text-[10px] text-zinc-500 font-medium">Auto-detect intent and execute system action</p>
-              </div>
-              <ArrowRight className="w-4 h-4 text-zinc-700 group-hover:text-indigo-500 transition-all group-hover:translate-x-1" />
-            </button>
-          )}
-
-          {/* Static Commands */}
-          <div className="space-y-1">
-            {filteredCommands.length > 0 ? (
-              filteredCommands.map((cmd) => (
-                <button
-                  key={cmd.id}
-                  onClick={() => runCommand(cmd)}
-
-                  className="w-full flex items-center gap-4 p-3 hover:bg-indigo-600/10 rounded-xl transition-all group border border-transparent hover:border-indigo-500/20"
-                >
-                  <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors">
-                    <cmd.icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-bold text-zinc-100 group-hover:text-white">{cmd.title}</p>
-                    <p className="text-[10px] text-zinc-500 font-medium">{cmd.description}</p>
-                  </div>
-                  <div className="hidden group-hover:block text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2">
-                    Jump To
-                  </div>
-                </button>
-              ))
-            ) : !query.trim() && (
-              <div className="p-8 text-center text-zinc-500 text-sm italic">
-                No matching commands found.
-              </div>
-            )}
-          </div>
+              <span>Esc Close</span>
+            </div>
+          </motion.div>
         </div>
-
-        <div className="p-3 bg-zinc-950/50 border-t border-zinc-900 flex justify-between items-center text-[10px] font-black text-zinc-700 uppercase tracking-[0.2em]">
-          <div className="flex gap-4">
-            <span>↑↓ Navigate</span>
-            <span>↵ Enter to Ask AI</span>
-          </div>
-          <span>Esc Close</span>
-        </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

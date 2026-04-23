@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../core/store';
 import { AVAILABLE_MODULES } from '../../modules';
-import { LayoutDashboard, Box, Download, Trash2, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { useModuleRegistry } from '../../core/agent/moduleRegistry';
+import { LayoutDashboard, Box, Download, Trash2, CheckCircle2, ShieldAlert, Wand2, Rocket, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ModuleInstallerPage() {
   const { installedModules, installModule, uninstallModule } = useStore();
+  const architectedModules = useModuleRegistry(state => state.modules);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -18,19 +20,19 @@ export default function ModuleInstallerPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-12 lg:p-24 selection:bg-indigo-500/30">
-      <div className="max-w-4xl mx-auto space-y-16">
+      <div className="max-w-4xl mx-auto space-y-24">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-indigo-500">
               <Box className="w-5 h-5" />
-              <span className="text-xs font-black uppercase tracking-[0.2em]">Module Installer</span>
+              <span className="text-xs font-black uppercase tracking-[0.2em]">Module Management</span>
             </div>
             <div className="space-y-1">
               <h1 className="text-5xl md:text-6xl font-black tracking-tighter bg-gradient-to-br from-white via-white to-zinc-600 bg-clip-text text-transparent">
                 Extensions
               </h1>
               <p className="text-zinc-500 font-medium text-lg">
-                Expand your OS with specialized capabilities.
+                Manage system modules and AI-architected features.
               </p>
             </div>
           </div>
@@ -46,8 +48,55 @@ export default function ModuleInstallerPage() {
           </nav>
         </header>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {AVAILABLE_MODULES.map((module) => {
+        {/* AI Architected Modules Section */}
+        {architectedModules.length > 0 && (
+          <section className="space-y-8">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-indigo-500/10 rounded-lg">
+                <Wand2 className="w-4 h-4 text-indigo-500" />
+              </div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500">Custom Features</h2>
+              <div className="flex-1 h-px bg-zinc-900" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {architectedModules.map((module) => (
+                <Link 
+                  href={`/modules/details?id=${module.id}`}
+                  key={module.id} 
+                  className="group relative p-8 rounded-3xl border border-zinc-800 bg-zinc-900/30 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all duration-500 overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ArrowRight className="w-5 h-5 text-indigo-500" />
+                  </div>
+                  <div className="space-y-6">
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center border border-zinc-700 group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20 transition-all">
+                      <Rocket className="w-6 h-6 text-zinc-500 group-hover:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black tracking-tight mb-1">{module.name}</h3>
+                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
+                        Created {new Date(module.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-zinc-800 rounded-lg">
+              <Box className="w-4 h-4 text-zinc-400" />
+            </div>
+            <h2 className="text-sm font-black uppercase tracking-widest text-zinc-500">System Modules</h2>
+            <div className="flex-1 h-px bg-zinc-900" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {AVAILABLE_MODULES.map((module) => {
             const isInstalled = installedModules.includes(module.name);
             
             return (
@@ -121,6 +170,7 @@ export default function ModuleInstallerPage() {
               </div>
             );
           })}
+          </div>
         </section>
 
         <footer className="pt-16 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-6">

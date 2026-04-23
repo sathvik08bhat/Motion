@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Focus, Eye, Terminal, CheckSquare, Target,
   CalendarDays, FileText, ScrollText, Settings, Plus, ChevronDown,
-  Sun, Moon, Zap
+  Sun, Moon, Zap, Lock, ShieldCheck, Layout
 } from "lucide-react";
 import { useAppTheme } from "../providers/ThemeProvider";
 import { useState } from "react";
@@ -14,10 +14,13 @@ import { slideUp, buttonHover, listItemHover } from "../../lib/animations";
 
 const NAV_ITEMS = [
   { href: "/",           label: "Dashboard",  icon: LayoutDashboard },
+  { href: "/workspace",  label: "Workspace",  icon: Layout },
+  { href: "/execution",  label: "Execution Hub", icon: Focus },
   { href: "/tasks",      label: "Tasks",      icon: CheckSquare },
-  { href: "/goals",      label: "Goals",      icon: Target },
-  { href: "/workspace",  label: "Notes",      icon: FileText },
-  { href: "/agent-log",  label: "Agent Log",  icon: ScrollText },
+  { href: "/vision",     label: "Vision Hub", icon: Target },
+  { href: "/thinking",   label: "Thinking Hub", icon: FileText },
+  { href: "/agent",      label: "Control Hub",  icon: ShieldCheck },
+  { href: "/vault",      label: "Vault",      icon: Lock },
   { href: "/settings",   label: "Settings",   icon: Settings },
 ];
 
@@ -27,41 +30,48 @@ export default function Sidebar() {
   const [showThemes, setShowThemes] = useState(false);
 
   const isDarkish = accentTheme === "dark" || accentTheme === "midnight";
+  const isCollapsed = pathname.startsWith("/workspace");
 
   return (
     <aside
-      className="fixed left-0 top-0 h-full w-64 flex flex-col z-40 border-r transition-all duration-300"
+      className={`fixed left-0 top-0 h-full flex flex-col z-40 border-r transition-all duration-300 ${
+        isCollapsed ? "w-16 md:w-16" : "w-64"
+      }`}
       style={{
         background: "var(--bg-sidebar)",
         borderColor: "var(--border-default)",
       }}
     >
       {/* ── Logo ──────────────────────────── */}
-      <div className="px-6 pt-6 pb-4">
+      <div className={`pt-6 pb-4 ${isCollapsed ? "px-4 flex justify-center" : "px-6"}`}>
         <div className="flex items-center gap-2.5 mb-1">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center shine"
+            className="w-7 h-7 rounded-lg flex items-center justify-center shine shrink-0"
             style={{ background: "var(--accent-primary)" }}
           >
             <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
-          <span
-            className="text-lg font-bold tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Motion
-          </span>
+          {!isCollapsed && (
+            <span
+              className="text-lg font-bold tracking-tight"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Motion
+            </span>
+          )}
         </div>
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          Autonomous productivity OS
-        </p>
+        {!isCollapsed && (
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Autonomous productivity OS
+          </p>
+        )}
       </div>
 
       {/* ── Quick Add ─────────────────────── */}
-      <div className="px-4 mb-4">
+      <div className={`mb-4 ${isCollapsed ? "px-2" : "px-4"}`}>
         <motion.button
           {...buttonHover}
-          className="btn-primary w-full justify-center shine"
+          className={`btn-primary w-full shine ${isCollapsed ? "justify-center p-2" : "justify-center"}`}
           onClick={() => {
             // open command palette
             const event = new KeyboardEvent("keydown", { key: "k", metaKey: true });
@@ -69,12 +79,12 @@ export default function Sidebar() {
           }}
         >
           <Plus className="w-4 h-4" strokeWidth={2.5} />
-          Quick Entry
+          {!isCollapsed && "Quick Entry"}
         </motion.button>
       </div>
 
       {/* ── Navigation ───────────────────── */}
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+      <nav className={`flex-1 space-y-0.5 overflow-y-auto ${isCollapsed ? "px-2" : "px-3"}`}>
         {NAV_ITEMS.map(({ href, label, icon: Icon }, i) => {
           const isActive = pathname === href || (href !== "/" && pathname.startsWith(href));
           return (
@@ -87,27 +97,43 @@ export default function Sidebar() {
             >
               <Link
                 href={href}
-                className={`nav-item flex items-center gap-3 px-3 py-2 rounded-xl transition-all`}
+                className={`nav-item group transition-all duration-300 ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center p-2' : ''}`}
                 style={{
-                  ...(isActive ? {
-                    color: "var(--sidebar-active-text)",
-                    background: "var(--sidebar-active-bg)",
-                    borderLeft: `3px solid var(--accent-primary)`,
-                    fontWeight: 600,
-                  } : {})
+                  textDecoration: 'none',
                 }}
               >
-                <Icon
-                  className="w-4 h-4 flex-shrink-0"
-                  style={{ color: isActive ? "var(--accent-primary)" : "var(--text-muted)" }}
-                />
-                <motion.span 
-                  initial={false}
-                  animate={{ x: isActive ? 2 : 0 }}
-                  className="flex-1"
+                <motion.div
+                  className={`flex items-center ${isCollapsed ? "" : "gap-3"} w-full`}
+                  whileHover={{ x: isCollapsed ? 0 : 6 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 >
-                  {label}
-                </motion.span>
+                  <Icon
+                    className="w-4.5 h-4.5 flex-shrink-0 transition-colors duration-300"
+                    style={{ 
+                      color: isActive ? "var(--accent-primary)" : "var(--text-muted)" 
+                    }}
+                  />
+                  <span 
+                    className="flex-1 transition-colors duration-300"
+                    style={{ 
+                      color: isActive ? "var(--sidebar-active-text)" : "var(--text-secondary)",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  
+                  {isActive && (
+                    <motion.div
+                      layoutId="active-pill"
+                      className="w-1 h-4 rounded-full"
+                      style={{ background: "var(--accent-primary)" }}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                    />
+                  )}
+                </motion.div>
               </Link>
             </motion.div>
           );

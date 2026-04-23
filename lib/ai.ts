@@ -117,6 +117,8 @@ export async function parseCommand(inputText: string): Promise<{ intent: string;
     - create_goal: User wants to start a project/objective.
     - plan_day: User wants to organize their schedule.
     - get_next_task: User wants to know what to do now.
+    - clear_all_tasks: User wants to delete or reset all tasks.
+    - build_module: User wants to create a new module or feature.
     
     RULES:
     1. Return ONLY a valid JSON object.
@@ -193,6 +195,64 @@ export async function getAgentDecision(context: any): Promise<{ action: string; 
   } catch (error) {
     console.error("AI Agent Decision failed:", error);
     return { action: "none", reason: "Error calculating optimal state." };
+  }
+}
+
+/**
+ * AI Refinement Engine:
+ * Takes raw module configuration and optimizes it for naming, layout, and component selection.
+ */
+export async function refineModuleConfig(intent: string, config: any): Promise<any> {
+  const prompt = `
+    You are the Motion OS Architect. Optimize this new module structure based on the user's intent and raw config.
+    
+    USER INTENT: "${intent}"
+    RAW CONFIG: ${JSON.stringify(config)}
+    
+    AVAILABLE COMPONENTS:
+    - StatCard: For single metrics (value, suffix, icon)
+    - ProgressBar: For tracking completion (current, target, unit)
+    - TaskList: For lists of items (filter, type)
+    - Chart: For trends (type: line/bar)
+    - DailyLog: For manual entry journals
+    - Countdown: For specific dates
+    
+    RULES:
+    1. Improve all titles to be professional and motivating.
+    2. Select the BEST 3-5 components that fulfill the intent.
+    3. Return ONLY a JSON object matching the ModuleLayout structure.
+    4. Ensure the accentColor matches one of: Indigo, Emerald, Rose, Amber, Cyan.
+    
+    FORMAT:
+    {
+      "title": "Optimized Title",
+      "accentColor": "Indigo",
+      "uiStyle": "detailed",
+      "sections": [
+        {
+          "id": "section_id",
+          "title": "Section Title",
+          "components": [
+            { "type": "StatCard", "title": "Label", "props": {} }
+          ]
+        }
+      ]
+    }
+  `;
+
+  try {
+    const rawResponse = await callAI(prompt);
+    const content = rawResponse.choices?.[0]?.message?.content || rawResponse;
+    const cleanContent = typeof content === "string" 
+      ? content.replace(/```json|```/g, "").trim() 
+      : content;
+    
+    return typeof cleanContent === "string" ? JSON.parse(cleanContent) : cleanContent;
+  } catch (error) {
+    console.error("AI Refinement failed:", error);
+    // Fallback to basic compiler if AI fails
+    const { compileModuleLayout } = await import("../core/agent/moduleCompiler");
+    return compileModuleLayout(config);
   }
 }
 
