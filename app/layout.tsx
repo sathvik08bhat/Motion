@@ -9,6 +9,8 @@ import Sidebar from "../components/navigation/Sidebar";
 import MainLayout from "../components/navigation/MainLayout";
 import ThemeProvider from "../components/providers/ThemeProvider";
 import GuidedBuilderModal from "../components/agent/GuidedBuilderModal";
+import SuggestionsFeed from "../components/agent/SuggestionsFeed";
+import AuthGuard from "../components/auth/AuthGuard";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,15 +37,17 @@ export default function RootLayout({
       </head>
       <body className="antialiased overflow-hidden" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
         <ThemeProvider>
-          <div className="flex h-screen w-full">
-            {/* Global Sidebar Navigation */}
-            <Sidebar />
+          <AuthGuard>
+            <div className="flex h-screen w-full">
+              {/* Global Sidebar Navigation */}
+              <Sidebar />
 
-            {/* Main Content Area */}
-            <MainLayout>
-              {children}
-            </MainLayout>
-          </div>
+              {/* Main Content Area */}
+              <MainLayout>
+                {children}
+              </MainLayout>
+            </div>
+          </AuthGuard>
 
           {/* Global Overlays & Utilities */}
           <AppInitializer />
@@ -51,6 +55,7 @@ export default function RootLayout({
           <ActionConfirmationModal />
           <UndoBanner />
           <GuidedBuilderModal />
+          <SuggestionsFeed />
         </ThemeProvider>
       </body>
     </html>

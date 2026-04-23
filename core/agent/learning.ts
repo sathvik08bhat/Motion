@@ -113,3 +113,29 @@ export async function adaptTaskParameters(task: Task): Promise<Partial<Task>> {
 
   return {};
 }
+
+/**
+ * Feedback Analysis: Aggregates user behavior regarding agent suggestions.
+ * 
+ * Returns a summary of which action types are being rejected vs accepted.
+ */
+export async function getFeedbackSummary() {
+  const logs = await db.action_logs.toArray();
+  
+  const summary: Record<string, { accepted: number; rejected: number }> = {};
+
+  logs.forEach(log => {
+    if (!summary[log.type]) {
+      summary[log.type] = { accepted: 0, rejected: 0 };
+    }
+    
+    if (log.status === "executed" || log.status === "approved") {
+      summary[log.type].accepted++;
+    } else if (log.status === "rejected") {
+      summary[log.type].rejected++;
+    }
+  });
+
+  return summary;
+}
+

@@ -9,11 +9,16 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useControlMode, type ControlMode } from "../../core/agent/control";
+import { usePendingStore } from "../../core/agent/pending";
+import { humanizeAction } from "../../core/agent/humanize";
+import { executeAction } from "../../core/agent/executor";
+import { logAction } from "../../core/agent/log";
 import { getAgentLogs, db, type ActionLog } from "../../data/db";
 import { fadeIn, slideUp, staggerContainer, buttonHover } from "../../lib/animations";
 
 export default function AgentControlHub() {
   const { currentMode, settings, setControlMode, updateSettings } = useControlMode();
+  const { suggestions, removeSuggestion } = usePendingStore();
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
@@ -21,7 +26,6 @@ export default function AgentControlHub() {
   useEffect(() => {
     async function loadLogs() {
       try {
-        // Fetch action logs from the db
         const data = await db.action_logs.orderBy('timestamp').reverse().limit(50).toArray();
         setLogs(data);
       } catch (error) {
@@ -33,18 +37,31 @@ export default function AgentControlHub() {
     loadLogs();
   }, []);
 
+  const handleApprove = async (action: any) => {
+    removeSuggestion(action.id);
+    const result = await executeAction(action);
+    await logAction(action, result.success ? "executed" : "failed");
+    setLogs(await db.action_logs.orderBy('timestamp').reverse().limit(50).toArray());
+  };
+
+  const handleReject = async (action: any) => {
+    removeSuggestion(action.id);
+    await logAction(action, "rejected");
+    setLogs(await db.action_logs.orderBy('timestamp').reverse().limit(50).toArray());
+  };
+
   const modes: { id: ControlMode; label: string; desc: string; icon: any; color: string }[] = [
     { 
       id: "suggest_only", 
       label: "Suggest Only", 
-      desc: "Agent identifies optimizations but never takes action. You are 100% in control.", 
+      desc: "Agent identifies optimizations and places them in your suggestion feed.", 
       icon: Eye,
       color: "zinc"
     },
     { 
       id: "semi_auto", 
       label: "Semi-Auto", 
-      desc: "Agent prepares actions and waits for your one-click approval. Maximum safety.", 
+      desc: "Agent prepares actions for review. Non-intrusive suggestions appear in the feed.", 
       icon: ShieldCheck,
       color: "indigo"
     },
@@ -195,29 +212,85 @@ export default function AgentControlHub() {
 
         </div>
 
-        {/* Right Column: Transparency Logs */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
-            <h2 className="text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
-              <History className="w-5 h-5 text-zinc-500" /> Transparency Log
-            </h2>
-            <div className="flex items-center gap-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
-              <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-green-500" /> Live Stream</span>
-              <button onClick={() => window.location.reload()} className="hover:text-white transition-colors">Refresh</button>
-            </div>
-          </div>
+        {/* Right Column: Suggestions & Transparency Logs */}
+        <div className="lg:col-span-2 space-y-10">
+          
+          {/* Active Suggestions Section */}
+          <AnimatePresence>
+            {suggestions.length > 0 && (
+              <motion.section 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center justify-between border-b border-indigo-500/20 pb-4">
+                  <h2 className="text-lg font-black text-white flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-indigo-500" /> Active Suggestions
+                  </h2>
+                  <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-black px-2 py-1 rounded-full border border-indigo-500/20">
+                    {suggestions.length} PENDING
+                  </span>
+                </div>
 
-          {loading ? (
-            <div className="py-20 flex flex-col items-center justify-center space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin text-zinc-700" />
-              <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest">Decrypting logs...</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {suggestions.map((action) => {
+                    const humanized = humanizeAction(action);
+                    return (
+                      <motion.div 
+                        key={action.id}
+                        layout
+                        className="card p-5 space-y-4 border-indigo-500/10 bg-indigo-500/[0.02]"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-xs font-black text-indigo-400 uppercase tracking-widest">{action.type.replace('_', ' ')}</p>
+                          <h3 className="text-sm font-bold text-white">{humanized.title}</h3>
+                          <p className="text-[11px] text-zinc-500 italic leading-relaxed">"{action.reason}"</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => handleApprove(action)}
+                            className="flex-1 btn-primary py-2 text-[10px] font-black"
+                          >
+                            Accept
+                          </button>
+                          <button 
+                            onClick={() => handleReject(action)}
+                            className="px-4 py-2 bg-zinc-900 text-zinc-500 hover:text-white rounded-xl text-[10px] font-black border border-zinc-800 transition-colors"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.section>
+            )}
+          </AnimatePresence>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-4">
+              <h2 className="text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
+                <History className="w-5 h-5 text-zinc-500" /> Transparency Log
+              </h2>
+              <div className="flex items-center gap-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+                <span className="flex items-center gap-1"><Activity className="w-3 h-3 text-green-500" /> Live Stream</span>
+                <button onClick={() => window.location.reload()} className="hover:text-white transition-colors">Refresh</button>
+              </div>
             </div>
-          ) : logs.length === 0 ? (
-            <div className="py-20 text-center space-y-4 border-2 border-dashed border-zinc-900 rounded-3xl">
-              <History className="w-10 h-10 text-zinc-800 mx-auto" />
-              <p className="text-zinc-500 text-sm">No actions recorded yet. Proactive audits occur every 5 minutes.</p>
-            </div>
-          ) : (
+
+            {loading ? (
+              <div className="py-20 flex flex-col items-center justify-center space-y-4">
+                <Loader2 className="w-8 h-8 animate-spin text-zinc-700" />
+                <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest">Decrypting logs...</p>
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="py-20 text-center space-y-4 border-2 border-dashed border-zinc-900 rounded-3xl">
+                <History className="w-10 h-10 text-zinc-800 mx-auto" />
+                <p className="text-zinc-500 text-sm">No actions recorded yet. Proactive audits occur every 5 minutes.</p>
+              </div>
+            ) : (
             <div className="space-y-3">
               <AnimatePresence>
                 {logs.map((log, i) => (
@@ -310,10 +383,9 @@ export default function AgentControlHub() {
               </AnimatePresence>
             </div>
           )}
-        </div>
-
-      </div>
-
+        </div> {/* lg:col-span-2 */}
+      </div> {/* grid */}
+    </div>
     </motion.div>
   );
 }

@@ -9,10 +9,20 @@ import { requestNotificationPermission, sendNotification } from "../lib/services
 import { AVAILABLE_MODULES } from "../modules"; 
 import { registerModule } from "../core/modules/registry";
 
+import { subscribeToAuth } from "../core/auth/service";
+import { useAuthStore } from "../core/auth/store";
+
 export default function AppInitializer() {
   const store = useStore();
+  const { setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
+    // Auth Listener
+    const unsubscribeAuth = subscribeToAuth((user) => {
+      setUser(user);
+      setLoading(false);
+    });
+
     // 1. Dynamic Module Installation
     const installed = store.installedModules || [];
     AVAILABLE_MODULES.forEach(mod => {
@@ -24,7 +34,7 @@ export default function AppInitializer() {
     // 2. Systems Boot
     initMemorySystem();
 
-    const cleanup = initAgentLoop(useStore);
+    const cleanupLoop = initAgentLoop(useStore);
 
     // Initial Permissions
     requestNotificationPermission();
@@ -47,7 +57,8 @@ export default function AppInitializer() {
     eventBus.on(OS_EVENTS.PLAN_CREATED, onPlanCreated);
 
     return () => {
-      cleanup();
+      unsubscribeAuth();
+      cleanupLoop();
       eventBus.off(OS_EVENTS.TASK_UPCOMING, onTaskUpcoming);
       eventBus.off(OS_EVENTS.TASK_MISSED, onTaskMissed);
       eventBus.off(OS_EVENTS.PLAN_CREATED, onPlanCreated);

@@ -53,8 +53,14 @@ export async function runAgentAction(action: AgentAction): Promise<void> {
   }
 
   if (interception.status === "pending") {
-    console.log("🚦 Orchestrator: Action pending confirmation.");
-    usePendingStore.getState().setPendingAction(action);
+    console.log("🚦 Orchestrator: Action added to non-intrusive suggestions.");
+    
+    // Check if it's a critical action that still needs a modal
+    if (action.type === "clear_all_tasks") {
+      usePendingStore.getState().setPendingAction(action);
+    } else {
+      usePendingStore.getState().addSuggestion(action);
+    }
     return;
   }
 

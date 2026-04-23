@@ -1,23 +1,29 @@
-import { getAutoRescheduledUpdates } from "../../lib/scheduler";
-import { bulkUpdateTasks } from "../../data/db";
-import { eventBus, OS_EVENTS } from "../events";
+import { getTasks, getGoals } from "../../data/db";
+import { runAgentAction } from "./orchestrator";
+import { makeDecisions } from "./decision";
+import { analyzeDomains, detectImbalance } from "./domainEngine";
+import { getFeedbackSummary } from "./learning";
 
 const AUDIT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
-const notifiedTasks = new Set<number>();
-
 /**
  * Continuous Agent Loop: Autonomously audits the OS state.
+ * 
+ * Steps:
+ * 1. Observe: get tasks, goals
+ * 2. Analyze: detect missed tasks, overload, opportunities
+ * 3. Decide: create actions
+ * 4. Send: to interceptor via runAgentAction
  */
 export function initAgentLoop(store: any) {
   console.log("🤖 Motion Agent: Loop Initialized");
   
   // Run initial audit after hydration delay
-  setTimeout(() => performAudit(store), 10000);
+  setTimeout(() => performAudit(), 10000);
 
   // Periodic Audit
   const intervalId = setInterval(() => {
-    performAudit(store);
+    performAudit();
   }, AUDIT_INTERVAL_MS);
 
   return () => {
@@ -26,59 +32,41 @@ export function initAgentLoop(store: any) {
   };
 }
 
-async function performAudit(store: any) {
-  const { tasks, bulkUpdateTasks: bulkUpdateTasksInStore } = store.getState();
+async function performAudit() {
+  console.log("🔍 Motion Agent: Running System Audit...");
   
-  if (!tasks || tasks.length === 0) return;
+  try {
+    // 1. Observe
+    const tasks = await getTasks();
+    const goals = await getGoals();
+    const pendingTasks = tasks.filter(t => t.status === "todo");
 
-  console.log(`🤖 Motion Agent: Auditing ${tasks.length} tasks...`);
+    if (pendingTasks.length === 0 && goals.length === 0) {
+      console.log("✨ Motion Agent: System is empty. No action required.");
+      return;
+    }
 
-  // 1. Detect Missed Tasks & Get Rescheduling Slots
-  const updates = await getAutoRescheduledUpdates(tasks);
-
-  if (updates.length > 0) {
-    console.log(`🚀 Motion Agent: Autonomously rescheduling ${updates.length} missed tasks.`);
+    // 2 & 3. Analyze & Decide
+    const domainStats = analyzeDomains(tasks);
+    const imbalance = detectImbalance(domainStats);
+    const feedback = await getFeedbackSummary();
     
-    try {
-      // 2. Commit to Database (IndexedDB)
-      await bulkUpdateTasks(updates);
-      
-      // 3. Commit to Global Store (Zustand)
-      bulkUpdateTasksInStore(updates);
-      
-      console.log("✅ Motion Agent: Schedule health restored.");
-    } catch (error) {
-      console.error("❌ Motion Agent: Audit commitment failed:", error);
-    }
-  } else {
-    console.log("✨ Motion Agent: Schedule is healthy. No action required.");
-  }
+    const actionsToTake = await makeDecisions(tasks, goals, domainStats, imbalance, feedback);
 
-  // 4. Detect Upcoming Tasks (within 5 minutes)
-  const now = Date.now();
-  const fiveMinsFromNow = now + 5 * 60 * 1000;
-  
-  tasks.forEach((task: any) => {
-    if (task.status === "todo") {
-      const scheduledTime = new Date(task.scheduledAt).getTime();
-      if (scheduledTime > now && scheduledTime <= fiveMinsFromNow) {
-        if (!notifiedTasks.has(task.id!)) {
-          eventBus.emit(OS_EVENTS.TASK_UPCOMING, task);
-          notifiedTasks.add(task.id!);
-        }
-      }
+    if (actionsToTake.length === 0) {
+      console.log("✨ Motion Agent: System is healthy. No action required.");
+      return;
     }
-  });
 
-  // 5. Run Module Agent Hooks
-  const { registry } = require("../modules/registry");
-  const hooks = registry.getAgentHooks();
-  for (const hook of hooks) {
-    try {
-      await hook(store);
-    } catch (error) {
-      console.error("❌ Motion Agent: Module hook failed:", error);
+    console.log(`🤖 Motion Agent: Decision Engine proposed ${actionsToTake.length} interventions.`);
+
+    // 4. Send to Interceptor (runAgentAction)
+    for (const action of actionsToTake) {
+      await runAgentAction(action);
     }
+
+  } catch (error) {
+    console.error("❌ Motion Agent: Audit failed:", error);
   }
 }
 
