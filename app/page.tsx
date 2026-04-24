@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { getGoals, getTasks } from "../data/db";
 import { useStore } from "../core/store";
@@ -10,7 +10,7 @@ import { eventBus, OS_EVENTS } from "../core/events";
 import { runAgentAction } from "../core/agent/orchestrator";
 import { createAgentAction } from "../core/agent/types";
 import { motion } from "framer-motion";
-import { fadeIn, slideUp, staggerContainer, cardHover, buttonHover } from "../lib/animations";
+import { fadeIn, slideUp, staggerContainer, cardHover } from "../lib/animations";
 import Link from "next/link";
 
 // Lazy-loaded widgets
@@ -21,9 +21,6 @@ const DomainInsights     = dynamic(() => import("../components/dashboard/DomainI
 const AgentDecisionWidget = dynamic(() => import("../components/dashboard/AgentDecisionWidget"), { ssr: false });
 const FocusCycleWidget   = dynamic(() => import("../components/dashboard/FocusCycleWidget"), { ssr: false });
 const IntentHistory      = dynamic(() => import("../components/dashboard/IntentHistory"), { ssr: false });
-
-const HOUR = new Date().getHours();
-const GREETING = HOUR < 12 ? "Good Morning" : HOUR < 17 ? "Good Afternoon" : "Good Evening";
 
 export default function Home() {
   const goals  = useStore(s => s.goals);
@@ -42,7 +39,7 @@ export default function Home() {
     return { done, total, rate: Math.round(focus * 100), activeGoals, focus };
   }, [tasks, goals]);
 
-  const handlePlanDay = async () => {
+  const handlePlanDay = useCallback(async () => {
     try {
       const planUpdates = await calculateSchedule(tasks, goals);
       if (planUpdates.length > 0) {
@@ -52,7 +49,7 @@ export default function Home() {
         eventBus.emit(OS_EVENTS.PLAN_CREATED, { count: planUpdates.length });
       }
     } catch (err) { console.error(err); }
-  };
+  }, [tasks, goals, bulkUpdateTasksInStore]);
 
   useEffect(() => {
     const onAction = (action: any) => {
@@ -60,7 +57,7 @@ export default function Home() {
     };
     eventBus.on(OS_EVENTS.ACTION_EXECUTED, onAction);
     return () => eventBus.off(OS_EVENTS.ACTION_EXECUTED, onAction);
-  }, [tasks, goals]);
+  }, [handlePlanDay]);
 
   useEffect(() => {
     async function hydrate() {
@@ -94,126 +91,122 @@ export default function Home() {
   return (
     <motion.div
       initial="initial" animate="animate" variants={staggerContainer}
-      className="h-full overflow-y-auto bg-black"
+      className="h-full overflow-y-auto scrollbar-hide relative z-10"
     >
-      {/* ─── AMBIENT BACKGROUND ──────────────────────────────────────── */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-[-20%] left-[10%] w-[50%] h-[50%] bg-indigo-600/[0.06] rounded-full blur-[140px]" />
-        <div className="absolute bottom-[-10%] right-[5%] w-[35%] h-[40%] bg-violet-500/[0.04] rounded-full blur-[120px]" />
-      </div>
+      <div className="relative z-10 p-6 xl:p-8 space-y-8 max-w-[1500px] mx-auto">
 
-      <div className="relative z-10 p-6 xl:p-8 space-y-6 max-w-[1400px] mx-auto">
-
-        {/* ─── HEADER ─────────────────────────────────────────────────── */}
-        <motion.div variants={fadeIn} className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-600 mb-1">
-              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-            </p>
-            <h1 className="text-3xl font-black tracking-tight text-white">
-              {GREETING} <span className="text-indigo-400">.</span>
-            </h1>
-          </div>
-          <motion.button
-            {...buttonHover}
+        {/* ─── HEADER ACTIONS ─────────────────────────────────────────── */}
+        <motion.div variants={fadeIn} className="flex justify-end mb-4">
+          <button
             onClick={handlePlanDay}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-500/20 transition-all"
+            className="btn-primary group"
           >
-            <Wand2 className="w-4 h-4" />
-            Plan My Day
-          </motion.button>
+            <Wand2 className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+            Optimize Schedule
+          </button>
         </motion.div>
 
         {/* ─── TOP STAT STRIP ─────────────────────────────────────────── */}
-        <motion.div variants={staggerContainer} className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <motion.div variants={staggerContainer} className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Focus State",   value: stats.rate > 70 ? "Deep Flow" : stats.rate > 40 ? "Active" : "Warming Up", sub: `${stats.done}/${stats.total} tasks`, icon: Target,      accent: "#6366f1" },
-            { label: "Today's Rate",  value: `${stats.rate}%`,   sub: "Completion",          icon: TrendingUp,  accent: "#22c55e" },
-            { label: "Active Goals",  value: stats.activeGoals,  sub: "In progress",          icon: CheckCircle2,accent: "#f97316" },
-            { label: "Tasks Done",    value: stats.done,          sub: `of ${stats.total} today`, icon: Clock,   accent: "#8b5cf6" },
+            { label: "Neural State",  value: stats.rate > 70 ? "Deep Flow" : stats.rate > 40 ? "Active" : "Warming Up", sub: `${stats.done}/${stats.total} nodes`, icon: Target, accent: "#5C5CFF" },
+            { label: "Efficiency",    value: `${stats.rate}%`,   sub: "System rate", icon: TrendingUp, accent: "#00F0FF" },
+            { label: "Active Vectors",value: stats.activeGoals,  sub: "Processing",  icon: CheckCircle2, accent: "#F97316" },
+            { label: "Computations",  value: stats.done,         sub: `of ${stats.total} reqs`, icon: Clock, accent: "#8B5CF6" },
           ].map((s, i) => (
             <motion.div key={s.label} variants={slideUp} {...cardHover}
-              className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.05] transition-all cursor-default">
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">{s.label}</span>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${s.accent}20` }}>
-                  <s.icon className="w-3.5 h-3.5" style={{ color: s.accent }} />
+              className="glass-panel p-5 card-interactive">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">{s.label}</span>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shadow-inner" style={{ background: `${s.accent}15`, border: `1px solid ${s.accent}30` }}>
+                  <s.icon className="w-4 h-4" style={{ color: s.accent }} />
                 </div>
               </div>
-              <p className="text-2xl font-black tracking-tight text-white">{s.value}</p>
-              <p className="text-[10px] text-zinc-600 mt-1">{s.sub}</p>
+              <p className="text-3xl font-black tracking-tighter text-white">{s.value}</p>
+              <p className="text-[11px] font-semibold text-zinc-600 tracking-wide mt-1 uppercase">{s.sub}</p>
             </motion.div>
           ))}
         </motion.div>
 
         {/* ─── MAIN 3-COLUMN GRID ─────────────────────────────────────── */}
-        <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr_280px] gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-[300px_1fr_300px] gap-8">
 
           {/* LEFT COLUMN ─── Today's Schedule ─── */}
-          <motion.div variants={slideUp} className="space-y-5">
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Today's Agenda</span>
-              <Link href="/tasks" className="text-[9px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-1 hover:text-indigo-300 transition-colors">
-                All <ArrowRight className="w-3 h-3" />
+          <motion.div variants={slideUp} className="space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Execution Queue</span>
+              <Link href="/tasks" className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors">
+                View All
               </Link>
             </div>
-            <TodayView />
-            <DoneView />
+            <div className="glass-panel p-2">
+              <TodayView />
+              <div className="mt-4 border-t border-white/5 pt-4">
+                <DoneView />
+              </div>
+            </div>
           </motion.div>
 
           {/* CENTER COLUMN ─── AI Intelligence Core ─── */}
-          <motion.div variants={slideUp} className="space-y-5">
+          <motion.div variants={slideUp} className="space-y-6">
 
             {/* AI Core Header */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-6 relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent" />
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center">
-                  <BrainCircuit className="w-5 h-5 text-indigo-400" />
+            <div className="glass-panel p-8 relative overflow-hidden group">
+              <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute -inset-24 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
+              
+              <div className="relative z-10 flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(92,92,255,0.2)]">
+                  <BrainCircuit className="w-6 h-6 text-indigo-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-black text-white">Motion Intelligence</p>
-                  <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Autonomous Agent · Active</p>
+                  <h2 className="text-lg font-black text-white tracking-tight">Intelligence Matrix</h2>
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Agent Orchestrator Online</p>
                 </div>
-                <div className="ml-auto flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Live</span>
+                <div className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-ring" />
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Live</span>
                 </div>
               </div>
-              <NextActionHero />
+              
+              <div className="relative z-10">
+                <NextActionHero />
+              </div>
             </div>
 
             {/* Focus Cycle Tracker */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-6">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="glass-panel p-6">
+              <div className="flex items-center gap-2 mb-6 px-2">
                 <Zap className="w-4 h-4 text-amber-400" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Focus Cycles</span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Flow State Sessions</span>
               </div>
               <FocusCycleWidget />
             </div>
 
             {/* Fitness Snapshot */}
-            <Link href="/fitness">
-              <motion.div whileHover={{ scale: 1.01 }} className="bg-white/[0.03] border border-white/[0.06] rounded-3xl p-5 cursor-pointer hover:bg-white/[0.05] hover:border-emerald-500/20 transition-all group">
-                <div className="flex items-center justify-between mb-4">
+            <Link href="/fitness" className="block">
+              <motion.div whileHover={{ scale: 1.01 }} className="glass-panel p-6 card-interactive group hover:border-emerald-500/30">
+                <div className="flex items-center justify-between mb-6 px-2">
                   <div className="flex items-center gap-2">
                     <Activity className="w-4 h-4 text-emerald-400" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Fitness Snapshot</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Biometrics</span>
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-zinc-700 group-hover:text-emerald-400 transition-colors" />
+                  <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-emerald-400 transition-colors" />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-4">
                   {[
                     { icon: Footprints, val: "7,842", label: "Steps", color: "#6366f1" },
-                    { icon: Flame,      val: "1,840", label: "kcal",  color: "#f97316" },
+                    { icon: Flame,      val: "1,840", label: "Kcal",  color: "#f97316" },
                     { icon: Activity,   val: "48m",   label: "Active",color: "#22c55e" },
                   ].map(m => (
-                    <div key={m.label} className="flex flex-col items-center gap-1.5">
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${m.color}20` }}>
-                        <m.icon className="w-4.5 h-4.5" style={{ color: m.color }} />
+                    <div key={m.label} className="flex flex-col items-center gap-2">
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/5 border border-white/10 group-hover:border-white/20 transition-colors">
+                        <m.icon className="w-5 h-5" style={{ color: m.color }} />
                       </div>
-                      <p className="text-sm font-black text-white">{m.val}</p>
-                      <p className="text-[9px] text-zinc-600 uppercase tracking-widest font-bold">{m.label}</p>
+                      <div className="text-center">
+                        <p className="text-sm font-black text-white">{m.val}</p>
+                        <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">{m.label}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -222,17 +215,17 @@ export default function Home() {
           </motion.div>
 
           {/* RIGHT COLUMN ─── Intelligence Feeds ─── */}
-          <motion.div variants={slideUp} className="space-y-5">
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600 block mb-3">Life Balance</span>
+          <motion.div variants={slideUp} className="space-y-6">
+            <div className="glass-panel p-4">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 block mb-4 px-2">Vector Balance</span>
               <DomainInsights />
             </div>
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600 block mb-3">Agent Decisions</span>
+            <div className="glass-panel p-4">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 block mb-4 px-2">Autonomy Logs</span>
               <AgentDecisionWidget />
             </div>
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600 block mb-3">Recent Intents</span>
+            <div className="glass-panel p-4">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 block mb-4 px-2">Command History</span>
               <IntentHistory />
             </div>
           </motion.div>
@@ -240,9 +233,9 @@ export default function Home() {
         </div>
 
         {/* ─── FOOTER ─────────────────────────────────────────────────── */}
-        <footer className="flex justify-between items-center pt-6 border-t border-white/[0.04]">
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-800">Motion OS · v1.0.4</span>
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-800">Intelligence Layer Active</span>
+        <footer className="flex justify-between items-center py-8 opacity-40">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">Void UI Pattern Active</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">System v1.0.5</span>
         </footer>
 
       </div>

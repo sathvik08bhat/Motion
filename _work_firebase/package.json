@@ -1,0 +1,61 @@
+{
+  "name": "motion",
+  "version": "0.1.0",
+  "main": "main.js",
+  "scripts": {
+    "next:dev": "next dev",
+    "next:build": "next build",
+    "electron:dev": "electron .",
+    "electron:build": "electron-builder",
+    "dev": "concurrently \"npm run next:dev\" \"wait-on http://localhost:3000 && npm run electron:dev\"",
+    "build": "npm run next:build && npm run electron:build",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "dexie": "^4.4.2",
+    "dexie-react-hooks": "^4.4.0",
+    "dotenv": "^17.4.2",
+    "firebase": "^12.2.1",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
+    "next": "16.2.4",
+    "next-themes": "^0.4.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "concurrently": "^9.1.2",
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-is-dev": "^2.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "com.motion.os",
+    "productName": "Motion",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "files": [
+      "out/**/*",
+      "main.js",
+      "preload.js"
+    ]
+  }
+}

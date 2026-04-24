@@ -37,6 +37,9 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "_work_firebase",
+    "motion-temp",
+    "scratch"
   ]
 }

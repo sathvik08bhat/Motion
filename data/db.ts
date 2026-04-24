@@ -109,6 +109,26 @@ export interface WorkspaceDatabase {
   rows: Row[];
 }
 
+export interface CalendarEventRecord {
+  id?: number;
+  externalId?: string;
+  title: string;
+  start: Date;
+  end: Date;
+  description?: string;
+  source: "google" | "motion";
+  status: "synced" | "pending";
+}
+
+export interface CommunicationRecord {
+  id?: number;
+  to: string;
+  content: string;
+  platform: "whatsapp" | "email" | "sms";
+  status: "sent" | "failed" | "pending";
+  timestamp: Date;
+}
+
 export class MotionDatabase extends Dexie {
   goals!: Table<Goal>;
   tasks!: Table<Task>;
@@ -120,6 +140,8 @@ export class MotionDatabase extends Dexie {
   daily_stats!: Table<DailyStats>;
   pages!: Table<Page, string>;
   databases!: Table<WorkspaceDatabase, string>;
+  calendar_events!: Table<CalendarEventRecord>;
+  communications!: Table<CommunicationRecord>;
 
   constructor() {
     super("MotionDB");
@@ -134,7 +156,9 @@ export class MotionDatabase extends Dexie {
       intents: "++id, text, timestamp",
       daily_stats: "date, completed, missed, total",
       pages: "id, parentId",
-      databases: "id"
+      databases: "id",
+      calendar_events: "++id, externalId, title, start, end, source, status",
+      communications: "++id, to, platform, status, timestamp"
     });
   }
 }

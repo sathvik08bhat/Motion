@@ -1,0 +1,430 @@
+"use client";
+
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useStore } from "../core/store";
+import { Command, Search, Target, ListTodo, X, Sparkles, Wand2, Calendar, CheckCircle2, Loader2, ArrowRight, Trash2 } from "lucide-react";
+import { parseCommand, generateTasksFromGoal } from "../lib/ai";
+import { calculateSchedule } from "../lib/scheduler";
+import { addGoal as addGoalToDb } from "../data/db";
+import { eventBus, OS_EVENTS } from "../core/events";
+import { registry } from "../core/modules/registry";
+import { runAgentAction } from "../core/agent/orchestrator";
+import { createAgentAction, createAction } from "../core/agent/types";
+import { processIntent, validateIntentResponse } from "../core/agent/intent";
+import { addIntent } from "../data/db";
+import { motion, AnimatePresence } from "framer-motion";
+
+
+
+
+const COMMANDS = [
+  { id: "create-goal", title: "Create Goal", icon: Target, route: "/goals", description: "Set a new high-level objective" },
+  { id: "create-task", title: "Create Task", icon: ListTodo, route: "/tasks", description: "Add a new actionable item" },
+  { id: "view-dashboard", title: "Go to Dashboard", icon: Command, route: "/", description: "Back to Command Center" }
+];
+
+export default function CommandPalette() {
+  const [query, setQuery] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [aiResult, setAiResult] = useState<{ intent: string; data: any } | null>(null);
+  
+  const { 
+    isPaletteOpen, setPaletteOpen, 
+    tasks, goals, 
+    addGoal: addGoalToStore, 
+    addTask: addTaskToStore,
+    bulkUpdateTasks: bulkUpdateTasksInStore 
+  } = useStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setPaletteOpen(!isPaletteOpen);
+      }
+      if (e.key === "Escape") {
+        setPaletteOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isPaletteOpen, setPaletteOpen]);
+
+  const handleSmartAction = useCallback(async (customQuery?: string) => {
+    const input = customQuery || query;
+    if (!input.trim()) return;
+
+    setIsProcessing(true);
+    setAiResult(null);
+
+    try {
+      const result = await parseCommand(input);
+
+      switch (result.intent) {
+        case "plan_day": {
+          const planUpdates = await calculateSchedule(tasks, goals);
+          const action = createAgentAction("bulk_schedule", { updates: planUpdates }, `AI request to optimize daily schedule: "${input}"`);
+          await runAgentAction(action);
+          
+          // Note: Since runAgentAction might be pending, we don't update store immediately here 
+          // if we want to be strict. But for smooth UX, if it's approved, we should.
+          // Actually, orchestrator should probably handle store updates or we should re-hydrate.
+          setAiResult({ intent: "plan_day", data: { count: planUpdates.length } });
+          break;
+        }
+
+        case "get_next_task": {
+          const now = new Date();
+          const nextTasks = tasks
+            .filter(t => t.status !== "done")
+            .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
+          
+          setAiResult({ intent: "get_next_task", data: { nextTask: nextTasks[0] || null } });
+          break;
+        }
+
+        case "create_goal": {
+          const goalTitle = result.data.title || input.replace("create goal", "").trim();
+          const goalData = {
+            title: goalTitle,
+            deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week default
+            priority: "medium" as const,
+            status: "not-started" as const
+          };
+          const goalId = await addGoalToDb(goalData) as number;
+          addGoalToStore({ ...goalData, id: goalId });
+
+          const generated = await generateTasksFromGoal(goalData.title);
+          const tasksToCreate = generated.map(gen => ({
+            title: gen.title,
+            duration: gen.duration,
+            goalId: goalId,
+            scheduledAt: new Date()
+          }));
+
+          const action = createAgentAction("bulk_create_tasks", { tasks: tasksToCreate }, `Breaking down goal "${goalTitle}" into actionable tasks.`);
+          await runAgentAction(action);
+          
+          setAiResult({ intent: "create_goal", data: { title: goalTitle, taskCount: generated.length } });
+          break;
+        }
+
+        case "create_task": {
+          const taskTitle = result.data.title || input.replace("create task", "").trim();
+          const action = createAgentAction("create_task", {
+            title: taskTitle,
+            duration: result.data.duration || 30,
+            scheduledAt: new Date()
+          }, `AI request to add task: "${input}"`);
+          
+          await runAgentAction(action);
+          setAiResult({ intent: "create_task", data: { title: taskTitle, duration: result.data.duration || 30 } });
+          break;
+        }
+
+        case "clear_all_tasks": {
+          const action = createAgentAction("clear_all_tasks", {}, "User requested to clear all tasks for a fresh start.");
+          await runAgentAction(action);
+          setAiResult({ intent: "clear_all_tasks", data: {} });
+          break;
+        }
+
+        case "build_module": {
+          const { useModuleBuilder } = await import("../core/agent/moduleBuilder");
+          useModuleBuilder.getState().startBuilder(input);
+          setPaletteOpen(false);
+          setQuery("");
+          break;
+        }
+
+
+        default: {
+          // If the specialized parser doesn't know what to do, use the general Intent Processor
+          await addIntent({ text: input, timestamp: Date.now() });
+          const intentResult = await processIntent(input, { goals, tasks });
+          validateIntentResponse(intentResult);
+
+
+          const action = createAction(
+
+            "create_goal_with_tasks",
+            { goal: intentResult.goal, tasks: intentResult.tasks },
+            `AI request to process intent: "${input}"`
+          );
+          
+          await runAgentAction(action);
+          setAiResult({ intent: "create_goal", data: { title: intentResult.goal, taskCount: intentResult.tasks.length } });
+          break;
+        }
+
+      }
+    } catch (error) {
+      console.error("Smart Action failed:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [query, tasks, goals, addGoalToStore, addTaskToStore, bulkUpdateTasksInStore]);
+
+  const filteredCommands = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    
+    // Convert module actions to Command Palette format
+    const moduleCommands = registry.getModules().flatMap(m => 
+      m.actions.map(action => ({
+        id: action.id,
+        title: action.label,
+        icon: Command, // Default icon or map from action.icon
+        handler: action.handler,
+        description: `Module: ${m.name}`,
+        isModuleAction: true
+      }))
+    );
+
+    const allCommands = [...COMMANDS, ...moduleCommands];
+
+    if (!q) return allCommands;
+    return allCommands.filter(cmd => 
+      cmd.title.toLowerCase().includes(q) || 
+      (cmd.description && cmd.description.toLowerCase().includes(q))
+    );
+  }, [query]);
+
+  const runCommand = (cmd: any) => {
+    if (cmd.isModuleAction && cmd.handler) {
+      cmd.handler();
+    } else if (cmd.route) {
+      router.push(cmd.route);
+    }
+    setPaletteOpen(false);
+    setQuery("");
+  };
+
+
+  return (
+    <AnimatePresence>
+      {isPaletteOpen && (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => {
+              setPaletteOpen(false);
+              setAiResult(null);
+              setQuery("");
+            }}
+          />
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="relative w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
+          >
+            <div className="p-4 border-b border-zinc-800 flex items-center gap-3 bg-zinc-900/50 backdrop-blur-md">
+              {isProcessing ? (
+                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+              ) : (
+                <Search className="w-5 h-5 text-zinc-500" />
+              )}
+              <input
+                autoFocus
+                type="text"
+                placeholder="Ask Motion anything... (e.g. 'What's next?')"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setAiResult(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSmartAction();
+                  }
+                }}
+                className="flex-1 bg-transparent border-none outline-none text-zinc-100 placeholder:text-zinc-600 font-medium"
+              />
+              <div className="flex items-center gap-2">
+                <kbd className="hidden sm:block px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-[10px] text-zinc-400 font-black tracking-widest uppercase">Enter</kbd>
+                <button
+                  onClick={() => {
+                    setPaletteOpen(false);
+                    setAiResult(null);
+                    setQuery("");
+                  }}
+                  className="p-1 hover:bg-zinc-800 rounded-md transition-colors"
+                >
+                  <X className="w-4 h-4 text-zinc-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-hide relative">
+              <AnimatePresence>
+                {isProcessing && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-2">
+                      <div className="bg-zinc-800/20 border border-zinc-800/50 rounded-xl p-4 space-y-3 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" style={{ backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite linear" }} />
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 rounded bg-zinc-800" />
+                          <div className="w-24 h-3 rounded bg-zinc-800" />
+                        </div>
+                        <div className="flex gap-4">
+                          <div className="w-10 h-10 rounded-full bg-zinc-800" />
+                          <div className="space-y-2 flex-1">
+                            <div className="w-1/3 h-4 rounded bg-zinc-800" />
+                            <div className="w-2/3 h-3 rounded bg-zinc-800/50" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {aiResult && (
+                <div className="p-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-indigo-400">
+                      <Sparkles className="w-4 h-4" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Motion AI Result</span>
+                    </div>
+
+                    {aiResult.intent === "plan_day" && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                          <Wand2 className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Day Optimized</p>
+                          <p className="text-xs text-indigo-300/60">I have re-slotted {aiResult.data.count} tasks for maximum efficiency.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {aiResult.intent === "clear_all_tasks" && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                          <Trash2 className="w-5 h-5 text-red-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Tasks Cleared</p>
+                          <p className="text-xs text-red-300/60">Your task list has been reset for a fresh start.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {aiResult.intent === "get_next_task" && (
+                      <div className="flex items-center gap-4">
+                        {aiResult.data.nextTask ? (
+                          <>
+                            <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                              <ArrowRight className="w-5 h-5 text-indigo-400" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-[10px] font-black text-indigo-400/60 uppercase">Next Action</p>
+                              <p className="text-sm font-bold text-white">{aiResult.data.nextTask.title}</p>
+                              <p className="text-[10px] text-zinc-500">Scheduled for {new Date(aiResult.data.nextTask.scheduledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                            </div>
+                            <CheckCircle2 className="w-5 h-5 text-indigo-500/40" />
+                          </>
+                        ) : (
+                          <p className="text-sm text-zinc-400 italic">No upcoming tasks found. Use &apos;Create task&apos; to add some.</p>
+                        )}
+                      </div>
+                    )}
+
+                    {aiResult.intent === "create_goal" && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                          <Target className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Goal Created: {aiResult.data.title}</p>
+                          <p className="text-xs text-indigo-300/60">AI has architected {aiResult.data.taskCount} tasks for this objective.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {aiResult.intent === "create_task" && (
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                          <ListTodo className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-white">Task Created: {aiResult.data.title}</p>
+                          <p className="text-xs text-indigo-300/60">Estimated duration: {aiResult.data.duration}m. Added to today&apos;s list.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {!aiResult && query.trim() && !filteredCommands.some(c => c.title.toLowerCase() === query.toLowerCase()) && (
+                <button
+                  onClick={() => handleSmartAction()}
+                  className="w-full flex items-center gap-4 p-3 hover:bg-zinc-800/50 rounded-xl transition-all group border border-dashed border-zinc-800 hover:border-indigo-500/30 mb-2"
+                >
+                  <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors animate-pulse">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-bold text-zinc-100 group-hover:text-white">Ask AI to &ldquo;{query}&rdquo;</p>
+                    <p className="text-[10px] text-zinc-500 font-medium">Auto-detect intent and execute system action</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-zinc-700 group-hover:text-indigo-500 transition-all group-hover:translate-x-1" />
+                </button>
+              )}
+
+              <div className="space-y-1">
+                {filteredCommands.length > 0 && filteredCommands.map((cmd) => (
+                  <button
+                    key={cmd.id}
+                    onClick={() => runCommand(cmd)}
+                    className="w-full flex items-center gap-4 p-3 hover:bg-indigo-600/10 rounded-xl transition-all group border border-transparent hover:border-indigo-500/20"
+                  >
+                    <div className="p-2 bg-zinc-800 rounded-lg group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors">
+                      <cmd.icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-bold text-zinc-100 group-hover:text-white">{cmd.title}</p>
+                      <p className="text-[10px] text-zinc-500 font-medium">{cmd.description}</p>
+                    </div>
+                    <div className="hidden group-hover:block text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2">
+                      Jump To
+                    </div>
+                  </button>
+                ))}
+                {filteredCommands.length === 0 && !query.trim() && (
+                  <div className="p-8 text-center text-zinc-500 text-sm italic">
+                    No matching commands found.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-3 bg-zinc-950/50 border-t border-zinc-900 flex justify-between items-center text-[10px] font-black text-zinc-700 uppercase tracking-[0.2em]">
+              <div className="flex gap-4">
+                <span>↑↓ Navigate</span>
+                <span>↵ Enter to Ask AI</span>
+              </div>
+              <span>Esc Close</span>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}

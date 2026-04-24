@@ -7,23 +7,25 @@ require('dotenv').config({ path: path.join(__dirname, '.env.local') });
 
 // Secure AI Proxy
 ipcMain.handle('ai-call', async (event, { messages, config }) => {
+  console.log('[Main Process] AI Call received');
   const apiKey = process.env.AI_API_KEY;
   if (!apiKey) {
+    console.error('[Main Process] AI_API_KEY missing!');
     throw new Error('AI_API_KEY is not configured in the main process.');
   }
 
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: config?.model || 'llama-3.3-70b-versatile',
+        model: config?.model || 'gemini-1.5-flash',
         messages: messages,
         temperature: config?.temperature || 0.7,
-        max_tokens: config?.max_tokens || 1024
+        max_tokens: config?.max_tokens || 2048
       })
     });
 
@@ -53,7 +55,7 @@ function createWindow() {
   });
 
   if (isDev) {
-    win.loadURL('http://localhost:3000');
+    win.loadURL('http://localhost:5174');
     win.webContents.openDevTools();
   } else {
     win.loadFile(path.join(__dirname, 'out', 'index.html'));

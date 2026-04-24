@@ -165,6 +165,56 @@ export async function executeAction(action: AgentAction): Promise<{ success: boo
         savePreviousState(action, { pageId, operation });
         break;
       }
+
+      case "add_calendar_event": {
+        const { title, start, end, description } = action.payload;
+        if (!title || !start || !end) throw new Error("title, start, and end required for calendar event");
+        
+        const { createCalendarEvent } = await import('../../lib/services/googleCalendar');
+        const newEvent = await createCalendarEvent({
+          title,
+          start: new Date(start),
+          end: new Date(end),
+          description
+        });
+        savePreviousState(action, { externalId: newEvent.id });
+        break;
+      }
+
+      case "send_message": {
+        const { to, content, platform } = action.payload;
+        if (!to || !content) throw new Error("to and content required for send_message");
+        
+        const { sendMessage } = await import('../../lib/services/messaging');
+        await sendMessage({
+          to,
+          content,
+          platform: platform || "whatsapp"
+        });
+        savePreviousState(action, { to, platform: platform || "whatsapp" });
+        break;
+      }
+
+      case "architect_system": {
+        const { intent } = action.payload;
+        if (!intent) throw new Error("intent required for architect_system");
+        
+        const { architectSystem } = await import('./autonomousBuilder');
+        const result = await architectSystem(intent);
+        savePreviousState(action, { pageIds: result.pages });
+        break;
+      }
+
+      case "execute_rpa": {
+        const { task } = action.payload;
+        if (!task) throw new Error("task required for execute_rpa");
+        
+        const { executeRPAWorkflow } = await import('./rpaExecutor');
+        const result = await executeRPAWorkflow(task);
+        if (!result.success) throw new Error(result.result);
+        savePreviousState(action, { result: result.result });
+        break;
+      }
       
       case "clear_all_tasks": {
         const allTasks = await db.tasks.toArray();

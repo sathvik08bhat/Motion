@@ -6,12 +6,11 @@ import PageTransition from "../providers/PageTransition";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isWorkspace = pathname.startsWith("/workspace");
 
   return (
-    <main className={`flex-1 flex flex-col relative h-full overflow-hidden transition-all duration-300 ${isWorkspace ? "md:ml-16" : "md:ml-64"}`}>
+    <main className="flex-1 flex flex-col relative h-full overflow-hidden transition-all duration-500 ease-out md:ml-[90px] xl:ml-[100px]">
       <Topbar />
-      <div className="flex-1 overflow-y-auto" style={{ background: "var(--bg-primary)" }}>
+      <div className="flex-1 overflow-y-auto scrollbar-hide relative z-10">
         <PageTransition>
           {children}
         </PageTransition>

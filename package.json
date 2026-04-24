@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "main": "main.js",
   "scripts": {
-    "next:dev": "next dev",
+    "next:dev": "next dev --port 5174",
     "next:build": "next build",
     "electron:dev": "electron .",
     "electron:build": "electron-builder",
-    "dev": "concurrently \"npm run next:dev\" \"wait-on http://localhost:3000 && npm run electron:dev\"",
+    "dev": "next dev --port 5174",
+    "electron:start": "wait-on http://localhost:5174 && electron .",
     "build": "npm run next:build && npm run electron:build",
     "lint": "eslint"
   },
@@ -15,7 +16,7 @@
     "dexie": "^4.4.2",
     "dexie-react-hooks": "^4.4.0",
     "dotenv": "^17.4.2",
-    "firebase": "^12.12.1",
+    "firebase": "^12.2.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.8.0",
     "next": "16.2.4",

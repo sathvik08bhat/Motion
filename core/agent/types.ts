@@ -9,6 +9,10 @@ export type AgentActionType =
   | "bulk_create_tasks"   // Added to support goal breakdown
   | "create_goal_with_tasks" // Added to support Intent Processor
   | "modify_page"          // Added to support Workspace AI Integrations
+  | "add_calendar_event"
+  | "send_message"
+  | "architect_system"
+  | "execute_rpa"
   | "clear_all_tasks";     // Added to support database reset
 
 

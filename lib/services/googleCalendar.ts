@@ -26,7 +26,8 @@ export interface GoogleTask {
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar.readonly",
-  "https://www.googleapis.com/auth/tasks.readonly",
+  "https://www.googleapis.com/auth/calendar.events",
+  "https://www.googleapis.com/auth/tasks",
 ].join(" ");
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -214,6 +215,50 @@ export async function fetchMonthEvents(
       source: "google" as const,
     };
   });
+}
+
+/** Create a new event in the primary Google Calendar. */
+export async function createCalendarEvent(event: Omit<CalendarEvent, "id" | "source">): Promise<CalendarEvent> {
+  const token = getStoredToken();
+  if (!token) throw new Error("Not signed in to Google");
+
+  const body = {
+    summary: event.title,
+    description: event.description,
+    start: {
+      dateTime: event.start.toISOString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+    end: {
+      dateTime: event.end.toISOString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+  };
+
+  const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Failed to create event: ${resp.status}`);
+  }
+
+  const item = await resp.json();
+  return {
+    id: item.id,
+    title: item.summary,
+    start: new Date(item.start.dateTime),
+    end: new Date(item.end.dateTime),
+    description: item.description,
+    htmlLink: item.htmlLink,
+    source: "google",
+  };
 }
 
 const colorMap: Record<string, string> = {

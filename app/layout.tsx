@@ -10,6 +10,7 @@ import MainLayout from "../components/navigation/MainLayout";
 import ThemeProvider from "../components/providers/ThemeProvider";
 import GuidedBuilderModal from "../components/agent/GuidedBuilderModal";
 import SuggestionsFeed from "../components/agent/SuggestionsFeed";
+import JarvisVoiceControl from "../components/agent/JarvisVoiceControl";
 import AuthGuard from "../components/auth/AuthGuard";
 
 const inter = Inter({
@@ -35,7 +36,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </head>
-      <body className="antialiased overflow-hidden" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
+      <body suppressHydrationWarning className="antialiased overflow-hidden" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
         <ThemeProvider>
           <AuthGuard>
             <div className="flex h-screen w-full">
@@ -56,6 +57,7 @@ export default function RootLayout({
           <UndoBanner />
           <GuidedBuilderModal />
           <SuggestionsFeed />
+          <JarvisVoiceControl />
         </ThemeProvider>
       </body>
     </html>

@@ -1,39 +1,33 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getFirestore, Firestore } from "firebase/firestore";
-import { getAuth, Auth } from "firebase/auth";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
-// Only initialize when real keys are present (not placeholders or undefined)
-const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const isPlaceholder = process.env.FIREBASE_API_KEY === "your_api_key";
 
-const isConfigured = 
-  apiKey && 
-  projectId && 
-  apiKey !== "your_api_key" && 
-  projectId !== "your_project_id";
-
-if (!isConfigured && typeof window !== "undefined") {
-  console.warn("⚠️ Firebase: Missing or placeholder keys in .env.local. Authentication and Firestore will not work until real credentials are provided.");
+if (isPlaceholder && typeof window !== "undefined") {
+  console.warn("⚠️ Firebase keys are missing or using placeholders. Please update .env.local with your real keys.");
 }
 
 const firebaseConfig = {
-  apiKey,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Conditionally initialize to prevent build-time crashes from invalid keys
-let app: FirebaseApp | null = null;
-let db: Firestore | null = null;
-let auth: Auth | null = null;
-
-if (isConfigured) {
-  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  db = getFirestore(app);
-  auth = getAuth(app);
-}
+// Initialize Firebase for SSR compatibility
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 export { app, db, auth };
+
+export function getUidOrThrow(): string {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("Authentication required: No user is currently signed in.");
+  }
+  return user.uid;
+}

@@ -1,9 +1,8 @@
 "use client";
 
-import { Search, Bell, Settings } from "lucide-react";
+import { Search, Command, Zap } from "lucide-react";
 import { useStore } from "../../core/store";
 import { motion } from "framer-motion";
-import { fadeIn, slideUp, buttonHover } from "../../lib/animations";
 
 export default function Topbar() {
   const setPaletteOpen = useStore((state) => state.setPaletteOpen);
@@ -20,85 +19,48 @@ export default function Topbar() {
   });
 
   return (
-    <header
-      className="flex items-center justify-between px-8 py-4 border-b flex-shrink-0"
-      style={{
-        background: "var(--bg-primary)",
-        borderColor: "var(--border-default)",
-      }}
-    >
+    <header className="flex items-center justify-between px-8 py-6 flex-shrink-0 z-20 relative">
       {/* Left: Greeting */}
       <motion.div 
-        variants={fadeIn}
-        initial="initial"
-        animate="animate"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <h1
-          className="text-xl font-bold tracking-tight leading-tight"
-          style={{ color: "var(--text-primary)" }}
-        >
+        <h1 className="text-2xl font-black tracking-tighter text-white">
           {greetingText()},{" "}
-          <span className="font-serif italic text-gradient">You.</span>
+          <span className="text-gradient">You.</span>
         </h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+        <p className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mt-1">
           {todayFull}
         </p>
       </motion.div>
 
       {/* Right: Search + Actions */}
-      <div className="flex items-center gap-3">
-        {/* Search */}
-        <motion.button
-          {...buttonHover}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+        className="flex items-center gap-4"
+      >
+        {/* Command Search */}
+        <button
           onClick={() => setPaletteOpen(true)}
-          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all group shine"
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-default)",
-            color: "var(--text-muted)",
-            boxShadow: "var(--shadow-sm)",
-          }}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-2xl glass-panel group relative overflow-hidden transition-all duration-500 hover:border-indigo-500/50 hover:bg-white/[0.04]"
         >
-          <Search className="w-4 h-4" />
-          <span className="text-xs">Search anything...</span>
-          <kbd
-            className="text-[9px] font-bold px-1.5 py-0.5 rounded-md ml-2"
-            style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}
-          >
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+          <Command className="w-4 h-4 text-zinc-400 group-hover:text-indigo-400 transition-colors relative z-10" />
+          <span className="text-xs font-semibold text-zinc-500 group-hover:text-zinc-300 transition-colors relative z-10">Access Command Link...</span>
+          <kbd className="text-[10px] font-black px-2 py-1 rounded-lg bg-black/40 text-zinc-400 border border-white/5 relative z-10 group-hover:text-white group-hover:border-indigo-500/30 transition-all">
             ⌘K
           </kbd>
-        </motion.button>
+        </button>
 
-        {/* Notification Bell */}
-        <motion.button
-          {...buttonHover}
-          className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-default)",
-            color: "var(--text-secondary)",
-          }}
-        >
-          <Bell className="w-4 h-4" />
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full animate-pulse"
-            style={{ background: "var(--accent-primary)" }}
-          />
-        </motion.button>
-
-        {/* Settings */}
-        <motion.button
-          {...buttonHover}
-          className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-          style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border-default)",
-            color: "var(--text-secondary)",
-          }}
-        >
-          <Settings className="w-4 h-4 transition-transform duration-500" />
-        </motion.button>
-      </div>
+        {/* Status Indicator */}
+        <div className="flex items-center justify-center w-10 h-10 rounded-2xl glass-panel relative group">
+          <Zap className="w-4 h-4 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse-ring" />
+          <div className="absolute inset-0 rounded-2xl border border-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      </motion.div>
     </header>
   );
 }
